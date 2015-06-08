@@ -6,7 +6,10 @@ def main(argv):
     if '-h' in argv:
         print 'usage: booksnake [filename]'
     if len(argv) >= 1:
-        filename = argv[0]
+        if argv[0].startswith('http'):
+            filename = downloader.download_uri(argv[0])
+        else:
+            filename = argv[0]
     else:
         return
 
