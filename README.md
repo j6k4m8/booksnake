@@ -3,9 +3,6 @@ A command-line tool to download, convert, and send eBooks to your kindle from th
 
 # Usage
 
-----------------
-Currently working:
-
 - Local Files
     ```
     booksnake ~/ebooks/HitchhikersGuide.mobi
@@ -18,15 +15,20 @@ Currently working:
     ```
     Converts epub to mobi and sends it along. (Uses `kindlegen`)
 
+- Remote File
+    ```
+    booksnake 'https://ebook-website.com/ebooks/HitchhikersGuide.mobi' -f mobi
+    ```
+    Downloads the book and sends it to your Kindle. Specify that you're downloading a mobi using the `-f` flag. Or download `-f html` or `-f epub`, I don't care. Use the `--keep` (`-k`) flag to retain the file after sending. Otherwise, it'll be deleted.
 
 -----------------
 Not yet implemented:
 
-- Remote File
+- Magnet (Torrent) File
     ```
-    booksnake 'https://ebook-website.com/ebooks/HitchhikersGuide.mobi'
+    booksnake 'magnet:?whatever-the-hell-magnet-links-look-like' -f mobi
     ```
-    Downloads the book and sends it to your Kindle. Use the `--keep` (`-k`) flag to retain the file after sending. Otherwise, it'll be deleted.
+    Planning on using aria2 for this. But... idk.
 
 
 # Requirements
@@ -41,3 +43,8 @@ Not yet implemented:
 - Make booksnake executable, if it isn't already. `chmod +x ./booksnake`
 - Run booksnake with the name of the file as its only argument: `./booksnake HitchhikersGuide.epub`
 - Go read a book or something
+
+# TODO
+
+- Magnet links
+- Intelligently guess what format has been downloaded (deprecate the `-f` flag)
