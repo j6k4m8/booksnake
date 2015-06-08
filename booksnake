@@ -1,0 +1,31 @@
+#!/usr/bin/python
+
+import sys, converter, messenger, os
+
+def main(argv):
+    if '-h' in argv:
+        print 'usage: booksnake [filename]'
+    if len(argv) >= 1:
+        filename = argv[0]
+    else:
+        return
+
+    base_filename = '.'.join(filename.split('.')[:-1])
+
+    # Convert if necessary
+    if converter.get_file_extension(filename) != 'mobi':
+        converter.convert_epub(filename)
+        final_filename = base_filename + '.mobi'
+    else:
+        final_filename = filename
+
+    print final_filename
+
+    if os.path.isfile(final_filename):
+        print "Sending..."
+        messenger.send_file(final_filename)
+    else:
+        print "Conversion failed."
+
+if __name__ == "__main__":
+    main(sys.argv[1:])
