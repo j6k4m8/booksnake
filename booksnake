@@ -4,16 +4,52 @@ import sys, converter, messenger, downloader, os
 
 def main(argv):
     if '-h' in argv:
-        print 'usage: booksnake [filename]'
+        print """
+        usage: booksnake [filename or url] [flags]
+
+        Flags:
+            -f      Specify a file format. Not needed if the file is local.
+            -k      Keep files after processing and sending.
+
+        Examples:
+            booksnake ~/ebooks/HitchhikersGuide.mobi
+                                        Sends the ebook; no conversion needed.
+
+            booksnake ~/ebooks/HitchhikersGuide.epub
+                                        First, converts the epub to mobi. Then,
+                                        sends just as above.
+
+            booksnake ~/ebooks/HitchhikersGuide.epub -k
+                                        Converts and sends, but does not delete
+                                        the temporary files after email is sent.
+                                        Note the -k (KEEP) flag.
+
+            booksnake http://arthur.dent.com/HitchhikersGuide.html -f html
+                                        Navigates to the URL (use quotes if the
+                                        URL contains spaces) and downloads the
+                                        file. You *must* specify a format using
+                                        the -f flag; this is because some sites
+                                        use a vanity URL (site.com/download/)
+                                        and a format is not specified.
+                                        (I'm working on fixing this...)
+
+            NOTE: As of right now, flags cannot be combined (e.g. -fk fails).
+        """
+        return
     if len(argv) >= 1:
         if argv[0].startswith('http'):
-
             if '-f' in argv:
                 _fmt = argv[argv.index('-f') + 1]
                 filename = downloader.download_uri(argv[0], fmt=_fmt)
             else:
                 print "No format given, try `-f mobi` or `-f html` or whatever."
                 return
+        elif argv[0].startswith('magnet:?'):
+            # download all files to a temporary subdirectory,
+            # then scan through, and all [pdf, html, epub] files should
+            # be iteratively converted and emailed.
+            print "Currently, magnet links are unsupported. Sorry! -jm"
+            return
         else:
             filename = argv[0]
     else:
