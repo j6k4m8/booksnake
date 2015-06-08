@@ -1,13 +1,19 @@
 #!/usr/bin/python
 
-import sys, converter, messenger, os
+import sys, converter, messenger, downloader, os
 
 def main(argv):
     if '-h' in argv:
         print 'usage: booksnake [filename]'
     if len(argv) >= 1:
         if argv[0].startswith('http'):
-            filename = downloader.download_uri(argv[0])
+
+            if '-f' in argv:
+                _fmt = argv[argv.index('-f') + 1]
+                filename = downloader.download_uri(argv[0], fmt=_fmt)
+            else:
+                print "No format given, try `-f mobi` or `-f html` or whatever."
+                return
         else:
             filename = argv[0]
     else:
@@ -29,6 +35,9 @@ def main(argv):
         messenger.send_file(final_filename)
     else:
         print "Conversion failed."
+
+    if '-k' not in argv:
+        os.system('rm ./.booksnake_*')
 
 if __name__ == "__main__":
     main(sys.argv[1:])
