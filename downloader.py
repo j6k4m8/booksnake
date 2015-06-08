@@ -1,17 +1,17 @@
 import os, time
-import urllib
+import urllib, posixpath
 
-def download_uri(uri, app="", save_as="ebook"):
+def download_uri(uri, app="", fmt="mobi"):
+    filename = ".booksnake_" + str(int(time.time())) + "." + fmt
+
     if app == '':
-        filename, _ = urllib.urlretrieve(urllib2.quote(uri))
-        return filename
-
-    if app == 'aria':
-        os.system("aria2c '" + uri + "'")
+        filename, _ = urllib.urlretrieve(uri, filename)
+    elif app == 'aria':
+        os.system("aria2c '" + uri + "' -o " + filename)
     elif app == 'curl':
         filename
-        os.system("curl '" + uri + "' -o " + str(int(time.time())) + ".ebook-download")
+        os.system("curl '" + uri + "' -o " + filename)
     elif app == 'wget':
-        os.system("wget '" + uri + "'")
+        os.system("wget '" + uri + "' -O " + filename)
 
-    return
+    return filename
