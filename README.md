@@ -48,3 +48,4 @@ Not yet implemented:
 
 - Magnet links
 - Intelligently guess what format has been downloaded (deprecate the `-f` flag)
+- Ping the Goodreads API to add your brand new book to a specific shelf (`--goodreads-shelf "on-kindle"` or something)
