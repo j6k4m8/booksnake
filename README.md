@@ -35,7 +35,7 @@ Not yet implemented:
 
 - Only tested on Ubuntu 14.04.
 - Gmail account (do you know your password?)
-- `kindlegen`, a cli epub-to-mobi converter from Amazon. (Download [here](http://www.amazon.com/gp/feature.html?docId=1000765211).) Must be globally callable, so I moved my executable to `/bin/`: `cd ~/Downloads/kindlegen /bin/`
+- `kindlegen`, a cli epub-to-mobi converter from Amazon. (Download [here](http://www.amazon.com/gp/feature.html?docId=1000765211).) Must be globally callable, so I moved my executable to `/bin/`: `cp ~/Downloads/kindlegen /bin/`
 - `aria2` will be used for downloading files in a future release.
 
 # Setup
