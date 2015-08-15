@@ -19,7 +19,7 @@ A command-line tool to download, convert, and send eBooks to your kindle from th
     ```
     booksnake 'https://ebook-website.com/ebooks/HitchhikersGuide.mobi' -f mobi
     ```
-    Downloads the book and sends it to your Kindle. Specify that you're downloading a mobi using the `-f` flag. Or download `-f html` or `-f epub`, I don't care. Use the `--keep` (`-k`) flag to retain the file after sending. Otherwise, it'll be deleted.
+    Downloads the book and sends it to your Kindle. Specify that you're downloading a mobi using the `-f` flag. Or download `-f html` or `-f epub`, I don't care. (This is because some links don't include the filename in them, or include a `?parameter` at the end, and booksnake is smart enough to follow links but it's not smart enough to always know the file you're downloading. So sue me.) Use the `--keep` (`-k`) flag to retain the file after sending. Otherwise, it'll be deleted.
 
 -----------------
 Not yet implemented:
