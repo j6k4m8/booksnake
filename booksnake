@@ -1,6 +1,11 @@
 #!/usr/bin/python
+import sys
+import os
 
-import sys, converter, messenger, downloader, os
+import converter
+import messenger
+import downloader
+
 
 def main(argv):
     if '-h' in argv:
@@ -21,7 +26,7 @@ def main(argv):
 
             booksnake ~/ebooks/HitchhikersGuide.epub -k
                                         Converts and sends, but does not delete
-                                        the temporary files after email is sent.
+                                        the temporary files after email is sent
                                         Note the -k (KEEP) flag.
 
             booksnake http://arthur.dent.com/HitchhikersGuide.html -f html
@@ -42,7 +47,7 @@ def main(argv):
                 _fmt = argv[argv.index('-f') + 1]
                 filename = downloader.download_uri(argv[0], fmt=_fmt)
             else:
-                print "No format given, try `-f mobi` or `-f html` or whatever."
+                print "No format given, try `-f mobi` or `-f html` or whatever"
                 return
         elif argv[0].startswith('magnet:?'):
             # download all files to a temporary subdirectory,

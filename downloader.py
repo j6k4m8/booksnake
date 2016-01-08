@@ -1,5 +1,8 @@
-import os, time
-import urllib, posixpath
+import os
+import time
+import urllib
+import posixpath
+
 
 def download_uri(uri, app="", fmt="mobi"):
     filename = ".booksnake_" + str(int(time.time())) + "." + fmt
