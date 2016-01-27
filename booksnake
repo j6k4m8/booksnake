@@ -63,8 +63,11 @@ def main(argv):
     base_filename = '.'.join(filename.split('.')[:-1])
 
     # Convert if necessary
-    if converter.get_file_extension(filename) != 'mobi':
+    if converter.get_file_extension(filename) == 'epub':
         converter.convert_epub(filename)
+        final_filename = base_filename + '.mobi'
+    if converter.get_file_extension(filename) == 'pdf':
+        converter.convert_pdf(filename)
         final_filename = base_filename + '.mobi'
     else:
         final_filename = filename
@@ -72,8 +75,11 @@ def main(argv):
     print final_filename
 
     if os.path.isfile(final_filename):
-        print "Sending..."
-        messenger.send_file(final_filename)
+        if '--convert-only' in argv:
+            print "Done: {}".format(final_filename)
+        else:
+            print "Sending..."
+            messenger.send_file(final_filename)
     else:
         print "Conversion failed."
 
