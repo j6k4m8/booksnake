@@ -1,5 +1,5 @@
 # booksnake
-A command-line tool to download, convert, and send eBooks to your kindle from the web as simply as possible.
+A command-line tool to download, convert, and send eBooks to your kindle from the web as simply as possible, in html, pdf, epub, or mobi formats.
 
 # Usage
 
