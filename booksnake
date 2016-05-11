@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 import os
 import sys
 import json
@@ -10,12 +12,14 @@ import getpass
 
 import urllib
 import time
+import urllib.request
+from bs4 import BeautifulSoup
 
 import argparse
 import libgenapi
 
 settings = {}
-HANDLED_FORMATS = ['pdf', 'mobi', 'epub', 'html']
+HANDLED_FORMATS = ['mobi', 'epub', 'html']
 
 # Uniformize 'input()'
 try:
@@ -60,7 +64,10 @@ def send_file(filename, from_email=None, to_email=None):
             raise ValueError("No to_email supplied.")
         to_email = settings['to_email']
 
-    m = email.mime.Multipart.MIMEMultipart()
+    try:
+        m = email.mime.Multipart.MIMEMultipart()
+    except:
+        m = email.mime.multipart.MIMEMultipart()
     m['Subject'] = ''
     m['From'] = from_email
     m['To'] = to_email
@@ -93,7 +100,7 @@ def save_settings():
 
 
 def convert_file(filename, ext):
-    return filename
+    os.system('kindlegen "{}"'.format(filename))
 
 
 def process_file(filename):
@@ -107,7 +114,7 @@ def process_file(filename):
     ext = filename.split('.')[-1]
     if ext != 'mobi':
         # We need to convert.
-        filename = convert_file(filename, ext)
+        convert_file(filename, ext)
     return filename
 
 
@@ -141,6 +148,18 @@ def _trunc(s, length):
         return s[:length - 3] + "..."
     return s
 
+
+import urllib.request
+def _follow_link(url):
+    opener = urllib.request.FancyURLopener({})
+    f = opener.open(url)
+    content = f.read()
+    soup = BeautifulSoup(content, 'html.parser')
+    # This is horrible and janky, and not guaranteed to work.
+    # TODO: Figure out a better way of finding the correct 'bounced' URL.
+    return "{}/{}".format('/'.join(url.split('/')[:3]), soup.find('a').attrs['href'])
+
+
 def process_query(query):
     """
     Process a query.
@@ -150,8 +169,9 @@ def process_query(query):
     options = []
     for pub in lg.search(query):
         if pub['extension'] in HANDLED_FORMATS:
-            print("[{}] {}\t{}".format(
+            print("[{}]{}\t{}\t{}".format(
                 selected,
+                [" ", "*"][pub['extension'] == 'mobi'],
                 _trunc(pub['author'], 30),
                 _trunc(pub['title'], 30)
             ))
@@ -159,7 +179,8 @@ def process_query(query):
             options.append(pub)
     selection = input("Select the book to download (1..{}): ".format(selected - 1))
     selected = options[int(selection) - 1]
-    return _attempt_url(selected['mirrors'][0], selected['extension'], selected['title'])
+    url = _follow_link(selected['mirrors'][0])
+    return _attempt_url(url, selected['extension'], selected['title'])
 
 
 def delete_file(filename):
@@ -189,7 +210,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     if args.filename is not None:
-        filename = process_file(args.filename)
+        filename = args.filename
     elif args.url is not None:
         filename = process_url(args.url)
     elif args.magnet is not None:
@@ -198,8 +219,9 @@ if __name__ == "__main__":
         # search if all else fails.
         filename = process_query(args.query)
 
+    # Perform conversion, if necessary.
+    process_file(filename)
     # `filename` holds the name of the file to send.
-
     send_file(filename, args.from_email, args.to_email)
 
     if not args.keep_file:
