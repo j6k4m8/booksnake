@@ -8,6 +8,11 @@ import smtplib
 import mimetypes
 import email
 import email.mime.application
+try:
+    import email.mime.Multipart
+except:
+    import email.mime.multipart
+
 import getpass
 
 import urllib
@@ -19,7 +24,7 @@ import argparse
 import libgenapi
 
 settings = {}
-HANDLED_FORMATS = ['mobi', 'epub', 'html']
+HANDLED_FORMATS = ['mobi', 'html', 'epub']
 
 # Uniformize 'input()'
 try:
@@ -31,6 +36,22 @@ try:
     urlretrieve = urllib.urlretrieve
 except:
     urlretrieve = urllib.request.urlretrieve
+
+cleanups = []
+
+Colors = {
+    "red": '\033[91m',
+    "green": '\033[92m',
+    "yellow": '\033[93m',
+    "light_purple": '\033[94m',
+    "purple": '\033[95m',
+    "cyan": '\033[96m',
+    "end": '\033[0m'
+
+}
+def _status(msg, color="end"):
+    sys.stdout.write("{}{}{}\n".format(Colors[color], msg, Colors["end"]))
+
 
 def read_settings():
     """
@@ -54,11 +75,6 @@ def send_file(filename, from_email=None, to_email=None):
             raise ValueError("No from_email supplied.")
         from_email = settings['from_email']
 
-    if 'smtp_password' not in settings or settings['smtp_password'] in [None, ""]:
-        passwd = getpass.getpass("SMTP password for {}: ".format(from_email))
-    else:
-        passwd = settings['smtp_password']
-
     if to_email is None:
         if 'to_email' not in settings:
             raise ValueError("No to_email supplied.")
@@ -79,16 +95,28 @@ def send_file(filename, from_email=None, to_email=None):
     att.add_header('Content-Disposition', 'attachment', filename=filename)
     m.attach(att)
 
-    print("Beginning send...")
-    s = smtplib.SMTP('smtp.gmail.com:587')
-    s.starttls()
-    s.login(from_email, passwd)
-    s.sendmail(
-        from_email,
-        [to_email],
-        m.as_string())
-    s.quit()
-    print("Send complete.")
+    cleanups.append(filename)
+
+    while True:
+        try:
+            if 'smtp_password' not in settings or settings['smtp_password'] in [None, ""]:
+                passwd = getpass.getpass("SMTP password for {}: ".format(from_email))
+            else:
+                passwd = settings['smtp_password']
+
+            _status("Beginning send...", "cyan")
+            s = smtplib.SMTP('smtp.gmail.com:587')
+            s.starttls()
+            s.login(from_email, passwd)
+            s.sendmail(
+                from_email,
+                [to_email],
+                m.as_string())
+            s.quit()
+            _status("Send complete.", "cyan")
+            return
+        except:
+            pass
 
 
 def save_settings():
@@ -101,6 +129,10 @@ def save_settings():
 
 def convert_file(filename, ext):
     os.system('kindlegen "{}"'.format(filename))
+    cleanups.append(filename)
+    filename = ".".join(filename.split('.')[:-1]) + ".mobi"
+    cleanups.append(filename)
+    return filename
 
 
 def process_file(filename):
@@ -114,7 +146,7 @@ def process_file(filename):
     ext = filename.split('.')[-1]
     if ext != 'mobi':
         # We need to convert.
-        convert_file(filename, ext)
+        filename = convert_file(filename, ext)
     return filename
 
 
@@ -151,6 +183,7 @@ def _trunc(s, length):
 
 import urllib.request
 def _follow_link(url):
+    _status("Following mirror link...", "yellow")
     opener = urllib.request.FancyURLopener({})
     f = opener.open(url)
     content = f.read()
@@ -167,11 +200,13 @@ def process_query(query):
     lg = libgenapi.Libgenapi(["http://libgen.io"])
     selected = 1
     options = []
-    for pub in lg.search(query):
+    responses = sorted(lg.search(query), key=lambda x: HANDLED_FORMATS.index(x) if x in HANDLED_FORMATS else 999)
+    for pub in responses:
         if pub['extension'] in HANDLED_FORMATS:
-            print("[{}]{}\t{}\t{}".format(
+            print("[{}]{}\t{}\t{}\t{}".format(
                 selected,
                 [" ", "*"][pub['extension'] == 'mobi'],
+                pub['extension'],
                 _trunc(pub['author'], 30),
                 _trunc(pub['title'], 30)
             ))
@@ -183,8 +218,12 @@ def process_query(query):
     return _attempt_url(url, selected['extension'], selected['title'])
 
 
-def delete_file(filename):
-    os.remove(filename)
+def delete_files():
+    for fn in cleanups:
+        try:
+            os.remove(fn)
+        except:
+            pass
 
 if __name__ == "__main__":
     read_settings()
@@ -225,6 +264,6 @@ if __name__ == "__main__":
     send_file(filename, args.from_email, args.to_email)
 
     if not args.keep_file:
-        delete_file(filename)
+        delete_files()
 
     save_settings()
