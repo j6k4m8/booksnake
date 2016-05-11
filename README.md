@@ -1,51 +1,47 @@
 # booksnake
 A command-line tool to download, convert, and send eBooks to your kindle from the web as simply as possible, in html, pdf, epub, or mobi formats.
 
-# Usage
-
-- Local Files
-    ```
-    booksnake ~/ebooks/HitchhikersGuide.mobi
-    ```
-    All this does is email the book using your gmail credentials.
-
-- Convert Files
-    ```
-    booksnake ~/ebooks/HitchhikersGuide.epub
-    ```
-    Converts epub to mobi and sends it along. (Uses `kindlegen`)
-
-- Remote File
-    ```
-    booksnake 'https://ebook-website.com/ebooks/HitchhikersGuide.mobi' -f mobi
-    ```
-    Downloads the book and sends it to your Kindle. Specify that you're downloading a mobi using the `-f` flag. Or download `-f html` or `-f epub`, I don't care. (This is because some links don't include the filename in them, or include a `?parameter` at the end, and booksnake is smart enough to follow links but it's not smart enough to always know the file you're downloading. So sue me.) Use the `--keep` (`-k`) flag to retain the file after sending. Otherwise, it'll be deleted.
-
------------------
-Not yet implemented:
-
-- Magnet (Torrent) File
-    ```
-    booksnake 'magnet:?whatever-the-hell-magnet-links-look-like' -f mobi
-    ```
-    Planning on using aria2 for this. But... idk.
-
-
 # Requirements
 
-- Only tested on Ubuntu 14.04.
+- Only tested on Ubuntu 14.04 and OS X.
 - Gmail account (do you know your password?)
 - `kindlegen`, a cli epub-to-mobi converter from Amazon. (Download [here](http://www.amazon.com/gp/feature.html?docId=1000765211).) Must be globally callable, so I moved my executable to `/bin/`: `cp ~/Downloads/kindlegen /bin/`
 - `aria2` will be used for downloading files in a future release.
+- `smtplib`, `mimetypes`, `email`, `BeautifulSoup`, `libgenapi`. pip install them all!
 
 # Setup
-- Rename `demo-settings.py` to `settings.py`, and fill in your kindle email (I use `[username]@free.kindle.com` to avoid charges), your gmail username, and gmail password. Yeah, you're writing it out in plaintext, so... I guess be careful or whatever.
-- Make booksnake executable, if it isn't already. `chmod +x ./booksnake`
-- Run booksnake with the name of the file as its only argument: `./booksnake HitchhikersGuide.epub`
-- Go read a book or something
+
+First, create a `~/.booksnakerc` file (not necessary, but makes it so you don't have to specify `--from-email`, `--to-email`, and SMTP password every time). This is JSON:
+
+```
+{
+    "from_email": "you@gmail.com",
+    "smtp_password": "your gmail password",
+    "to_email": "you@free.kindle.com"
+}
+```
+
+If you don't feel comfortable putting any of these values in plaintext in your config file, then just omit that line. `--from-email` and `--to-email` can be specified when you call `booksnake`, and if you omit the SMTP password, booksnake will prompt you for it once it's time to send your file.
+
+# Usage
+
+- Search online using the LibGen platform (only for freely available, public-domain books):
+    ```
+    booksnake --query "My Title"
+    ```
+
+- Download a book from a URL:
+    ```
+    booksnake --url "http://my.books.com/title.mobi"
+    ```
+
+- Send a local file:
+    ```
+    booksnake --file "title.mobi"
+    ```
 
 # TODO
 
 - Magnet links
 - Intelligently guess what format has been downloaded (deprecate the `-f` flag)
-- Ping the Goodreads API to add your brand new book to a specific shelf (`--goodreads-shelf "on-kindle"` or something)
+- Ping the Goodreads API to add your brand new book to a specific shelf (`--goodreads-shelf "on-kindle"` or something) -->
