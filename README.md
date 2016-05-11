@@ -1,6 +1,8 @@
 # booksnake
 A command-line tool to download, convert, and send eBooks to your kindle from the web as simply as possible, in html, pdf, epub, or mobi formats.
 
+Pull requests and bug reports welcome!
+
 # Requirements
 
 - Only tested on Ubuntu 14.04 and OS X.
@@ -44,4 +46,4 @@ If you don't feel comfortable putting any of these values in plaintext in your c
 
 - Magnet links
 - Intelligently guess what format has been downloaded (deprecate the `-f` flag)
-- Ping the Goodreads API to add your brand new book to a specific shelf (`--goodreads-shelf "on-kindle"` or something) -->
+- Ping the Goodreads API to add your brand new book to a specific shelf (`--goodreads-shelf "on-kindle"` or something)
