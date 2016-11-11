@@ -254,7 +254,7 @@ def process_query(query, mode=LIBRELIB):
         select_i += 1
     selection = input("Select the book to download (1..{}): ".format(select_i - 1))
     choice = options[int(selection) - 1]
-    return _attempt_url(choice[3], choice[2], choice[1])
+    return _attempt_url(choice[3].replace('download', 'get'), choice[2], choice[1])
 
 def delete_files():
     for fn in cleanups:
