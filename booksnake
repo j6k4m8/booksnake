@@ -32,6 +32,7 @@ try:
 except NameError:
     pass
 
+# Uniformize "urlretrieve"
 try:
     urlretrieve = urllib.urlretrieve
 except:
@@ -51,6 +52,35 @@ Colors = {
 }
 def _status(msg, color="end"):
     sys.stdout.write("{}{}{}\n".format(Colors[color], msg, Colors["end"]))
+
+PURPLE = '\033[95m'
+CYAN = '\033[96m'
+DARKCYAN = '\033[36m'
+BLUE = '\033[94m'
+GREEN = '\033[92m'
+YELLOW = '\033[93m'
+RED = '\033[91m'
+BOLD = '\033[1m'
+UNDERLINE = '\033[4m'
+END = '\033[0m'
+
+def pretty_print(colors, text, cr=True):
+    if type(colors) == list:
+        pre = ''.join(colors)
+    else:
+        pre = colors
+
+    if cr:
+        print(pre + text + END)
+    else:
+        print(pre + text + END, end="")
+
+def pretty_format(colors, text):
+    if type(colors) == list:
+        pre = ''.join(colors)
+    else:
+        pre = colors
+    return(pre + text + END)
 
 
 def read_settings():
@@ -161,11 +191,12 @@ def _attempt_url(url, fmt="mobi", fname=None):
     filename, _ = urlretrieve(url, filename)
     return filename
 
+
 def process_url(url):
     """
     Process a url.
     """
-    pass
+    return _attempt_url(url)
 
 
 def process_magnet(magnet):
@@ -195,7 +226,8 @@ class LibreLib:
             a.findAll('a')[0].text.strip(),     # author
             a.findAll('a')[1].text.strip(),     # title
             a.findAll('a')[-1].text,            # format
-            a.findAll('a')[-1].get('href')      # link
+            a.findAll('a')[-1].get('href'),     # link
+            a.findAll('td')[-2].text            # size
         ] for a in soup.findAll('tr')[1:]]
         return options
 
@@ -214,8 +246,8 @@ def process_query(query, mode=LIBRELIB):
             select_i,
             [" ", "*"][pub[2] == 'mobi'],
             _trunc(pub[0], 30), # author
-            _trunc(pub[1], 30), # title
-            pub[2], # format
+            pretty_format([GREEN], _trunc(pub[1], 30)), # title
+            pretty_format([PURPLE], pub[4] + " " + pub[2]) # format
         ))
         select_i += 1
     selection = input("Select the book to download (1..{}): ".format(select_i - 1))
