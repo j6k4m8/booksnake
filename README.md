@@ -31,6 +31,7 @@ If you don't feel comfortable putting any of these values in plaintext in your c
     ```
     booksnake --query "My Title"
     ```
+    [![asciicast](https://asciinema.org/a/2ji7kxe7840xqiyujxtjyrkkg.png)](https://asciinema.org/a/2ji7kxe7840xqiyujxtjyrkkg)
 
 - Download a book from a URL:
     ```
