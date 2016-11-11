@@ -193,30 +193,68 @@ def _follow_link(url):
     return "{}/{}".format('/'.join(url.split('/')[:3]), soup.find('a').attrs['href'])
 
 
-def process_query(query):
+class LibreLib:
+    def __init__(self):
+        self.base_url = "http://www.librelib.com"
+
+    def get_options(self, query):
+        query = query.replace(' ', '+')
+        query = "/book?s=" + query
+        f = urllib.request.FancyURLopener({}).open(self.base_url + query)
+        content = f.read()
+        soup = BeautifulSoup(content, 'html.parser')
+        options = [[
+            a.findAll('a')[0].text.strip(),     # author
+            a.findAll('a')[1].text.strip(),     # title
+            a.findAll('a')[-1].text,            # format
+            a.findAll('a')[-1].get('href')      # link
+        ] for a in soup.findAll('tr')[1:]]
+        return options
+
+
+LIBRELIB = 1
+LIBGEN   = 1
+def process_query(query, mode=LIBRELIB):
     """
     Process a query.
     """
-    lg = libgenapi.Libgenapi(["http://libgen.io"])
-    selected = 1
-    options = []
-    responses = sorted(lg.search(query), key=lambda x: HANDLED_FORMATS.index(x) if x in HANDLED_FORMATS else 999)
-    for pub in responses:
-        if pub['extension'] in HANDLED_FORMATS:
-            print("[{}]{}\t{}\t{}\t{}".format(
-                selected,
-                [" ", "*"][pub['extension'] == 'mobi'],
-                pub['extension'],
-                _trunc(pub['author'], 30),
-                _trunc(pub['title'], 30)
-            ))
-            selected += 1
-            options.append(pub)
-    selection = input("Select the book to download (1..{}): ".format(selected - 1))
-    selected = options[int(selection) - 1]
-    url = _follow_link(selected['mirrors'][0])
-    return _attempt_url(url, selected['extension'], selected['title'])
-
+    #if mode is LIBGEN:
+    #    lg = libgenapi.Libgenapi(["http://libgen.io"])
+    #    selected = 1
+    #    options = []
+    #    responses = sorted(lg.search(query), key=lambda x: HANDLED_FORMATS.index(x) if x in HANDLED_FORMATS else 999)
+    #    for pub in responses:
+    #        if pub['extension'] in HANDLED_FORMATS:
+    #            print("[{}]{}\t{}\t{}\t{}".format(
+    #                selected,
+    #                [" ", "*"][pub['extension'] == 'mobi'],
+    #                pub['extension'],
+    #                _trunc(pub['author'], 30),
+    #                _trunc(pub['title'], 30)
+    #            ))
+    #            selected += 1
+    #            options.append(pub)
+    #    selection = input("Select the book to download (1..{}): ".format(selected - 1))
+    #    selected = options[int(selection) - 1]
+    #    url = _follow_link(selected['mirrors'][0])
+    #    return _attempt_url(url, selected['extension'], selected['title'])
+    #elif mode is LIBRELIB:
+        # Use librelib instead:
+    ll = LibreLib()
+    options = ll.get_options(query)
+    select_i = 1
+    for pub in options:
+        print("[{}]{}\t{}\t{}\t{}".format(
+            select_i,
+            [" ", "*"][pub[2] == 'mobi'],
+            pub[0], # author
+            pub[1], # title
+            pub[2], # format
+        ))
+        select_i += 1
+    selection = input("Select the book to download (1..{}): ".format(select_i - 1))
+    choice = options[int(selection) - 1]
+    return _attempt_url(choice[3], choice[2], choice[1])
 
 def delete_files():
     for fn in cleanups:
