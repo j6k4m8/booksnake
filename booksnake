@@ -63,7 +63,7 @@ def read_settings():
         with open(os.path.expanduser('~/.booksnakerc'), 'r') as setfh:
             settings = json.load(setfh)
     except:
-        click.secho("No .booksnakerc file found, creating a new one.", fg="yellow")
+        _status("No .booksnakerc file found, creating a new one.", color="yellow")
         settings = {}
         save_settings()
 
@@ -181,18 +181,6 @@ def _trunc(s, length):
     return s
 
 
-import urllib.request
-def _follow_link(url):
-    _status("Following mirror link...", "yellow")
-    opener = urllib.request.FancyURLopener({})
-    f = opener.open(url)
-    content = f.read()
-    soup = BeautifulSoup(content, 'html.parser')
-    # This is horrible and janky, and not guaranteed to work.
-    # TODO: Figure out a better way of finding the correct 'bounced' URL.
-    return "{}/{}".format('/'.join(url.split('/')[:3]), soup.find('a').attrs['href'])
-
-
 class LibreLib:
     def __init__(self):
         self.base_url = "http://www.librelib.com"
@@ -218,28 +206,6 @@ def process_query(query, mode=LIBRELIB):
     """
     Process a query.
     """
-    #if mode is LIBGEN:
-    #    lg = libgenapi.Libgenapi(["http://libgen.io"])
-    #    selected = 1
-    #    options = []
-    #    responses = sorted(lg.search(query), key=lambda x: HANDLED_FORMATS.index(x) if x in HANDLED_FORMATS else 999)
-    #    for pub in responses:
-    #        if pub['extension'] in HANDLED_FORMATS:
-    #            print("[{}]{}\t{}\t{}\t{}".format(
-    #                selected,
-    #                [" ", "*"][pub['extension'] == 'mobi'],
-    #                pub['extension'],
-    #                _trunc(pub['author'], 30),
-    #                _trunc(pub['title'], 30)
-    #            ))
-    #            selected += 1
-    #            options.append(pub)
-    #    selection = input("Select the book to download (1..{}): ".format(selected - 1))
-    #    selected = options[int(selection) - 1]
-    #    url = _follow_link(selected['mirrors'][0])
-    #    return _attempt_url(url, selected['extension'], selected['title'])
-    #elif mode is LIBRELIB:
-        # Use librelib instead:
     ll = LibreLib()
     options = ll.get_options(query)
     select_i = 1
@@ -247,8 +213,8 @@ def process_query(query, mode=LIBRELIB):
         print("[{}]{}\t{}\t{}\t{}".format(
             select_i,
             [" ", "*"][pub[2] == 'mobi'],
-            pub[0], # author
-            pub[1], # title
+            _trunc(pub[0], 30), # author
+            _trunc(pub[1], 30), # title
             pub[2], # format
         ))
         select_i += 1
