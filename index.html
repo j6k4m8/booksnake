@@ -33,12 +33,13 @@
 <li>Only tested on Ubuntu 14.04 and OS X.</li>
 <li>Gmail account (do you know your password?)</li>
 <li>
+<code>smtplib</code>, <code>mimetypes</code>, <code>email</code>, <code>BeautifulSoup</code>. pip install them all!
+## Optional</li>
+<li>
 <code>kindlegen</code>, a cli epub-to-mobi converter from Amazon. (Download <a href="http://www.amazon.com/gp/feature.html?docId=1000765211">here</a>.) Must be globally callable, so I moved my executable to <code>/bin/</code>: <code>cp ~/Downloads/kindlegen /bin/</code>
 </li>
 <li>
 <code>aria2</code> will be used for downloading files in a future release.</li>
-<li>
-<code>smtplib</code>, <code>mimetypes</code>, <code>email</code>, <code>BeautifulSoup</code>, <code>libgenapi</code>. pip install them all!</li>
 </ul>
 
 <h1>
@@ -60,12 +61,12 @@
 
 <ul>
 <li>
-<p>Search online using the LibGen platform (only for freely available, public-domain books):</p>
+<p>Search online (only for use when finding freely available, public-domain books):</p>
 
 <pre><code>booksnake --query "My Title"
 </code></pre>
 
-<p><a href="https://asciinema.org/a/2ji7kxe7840xqiyujxtjyrkkg"><img src="https://asciinema.org/a/2ji7kxe7840xqiyujxtjyrkkg.png" alt="asciicast"></a></p>
+<p>You will be prompted to pick an item from the list in order to download.</p>
 </li>
 <li>
 <p>Download a book from a URL:</p>
@@ -89,6 +90,8 @@
 <li>Intelligently guess what format has been downloaded (deprecate the <code>-f</code> flag)</li>
 <li>Ping the Goodreads API to add your brand new book to a specific shelf (<code>--goodreads-shelf "on-kindle"</code> or something)</li>
 </ul>
+
+<p>Contributions and bug-reports welcome!</p>
 
       <footer class="site-footer">
         <span class="site-footer-owner"><a href="https://github.com/j6k4m8/booksnake">Booksnake</a> is maintained by <a href="https://github.com/j6k4m8">j6k4m8</a>.</span>
