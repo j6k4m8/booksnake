@@ -21,7 +21,6 @@ import urllib.request
 from bs4 import BeautifulSoup
 
 import argparse
-import libgenapi
 
 settings = {}
 HANDLED_FORMATS = ['mobi', 'html', 'epub']
@@ -40,18 +39,6 @@ except:
 
 cleanups = []
 
-Colors = {
-    "red": '\033[91m',
-    "green": '\033[92m',
-    "yellow": '\033[93m',
-    "light_purple": '\033[94m',
-    "purple": '\033[95m',
-    "cyan": '\033[96m',
-    "end": '\033[0m'
-
-}
-def _status(msg, color="end"):
-    sys.stdout.write("{}{}{}\n".format(Colors[color], msg, Colors["end"]))
 
 PURPLE = '\033[95m'
 CYAN = '\033[96m'
@@ -64,6 +51,7 @@ BOLD = '\033[1m'
 UNDERLINE = '\033[4m'
 END = '\033[0m'
 
+
 def pretty_print(colors, text, cr=True):
     if type(colors) == list:
         pre = ''.join(colors)
@@ -74,6 +62,7 @@ def pretty_print(colors, text, cr=True):
         print(pre + text + END)
     else:
         print(pre + text + END, end="")
+
 
 def pretty_format(colors, text):
     if type(colors) == list:
@@ -93,7 +82,7 @@ def read_settings():
         with open(os.path.expanduser('~/.booksnakerc'), 'r') as setfh:
             settings = json.load(setfh)
     except:
-        _status("No .booksnakerc file found, creating a new one.", color="yellow")
+        pretty_print([YELLOW], "No ~/.booksnakerc file found, creating...")
         settings = {}
         save_settings()
 
@@ -129,12 +118,17 @@ def send_file(filename, from_email=None, to_email=None):
 
     while True:
         try:
-            if 'smtp_password' not in settings or settings['smtp_password'] in [None, ""]:
-                passwd = getpass.getpass("SMTP password for {}: ".format(from_email))
+            if (
+                ('smtp_password' not in settings) or
+                (settings['smtp_password'] in [None, ""])
+            ):
+                passwd = getpass.getpass(
+                    "SMTP password for {}: ".format(from_email)
+                )
             else:
                 passwd = settings['smtp_password']
 
-            _status("Beginning send...", "cyan")
+            pretty_print([CYAN], "Beginning send...")
             s = smtplib.SMTP('smtp.gmail.com:587')
             s.starttls()
             s.login(from_email, passwd)
@@ -143,7 +137,7 @@ def send_file(filename, from_email=None, to_email=None):
                 [to_email],
                 m.as_string())
             s.quit()
-            _status("Send complete.", "cyan")
+            pretty_print([CYAN], "Send complete.")
             return
         except:
             pass
@@ -154,7 +148,9 @@ def save_settings():
     Write settings to ~/.booksnakerc.
     """
     with open(os.path.expanduser('~/.booksnakerc'), 'w+') as setfh:
-        json.dump(settings, setfh, sort_keys=True, indent=4, ensure_ascii=False)
+        json.dump(
+            settings, setfh, sort_keys=True, indent=4, ensure_ascii=False
+        )
 
 
 def convert_file(filename, ext):
@@ -233,7 +229,9 @@ class LibreLib:
 
 
 LIBRELIB = 1
-LIBGEN   = 1
+LIBGEN = 1
+
+
 def process_query(query, mode=LIBRELIB):
     """
     Process a query.
@@ -242,17 +240,24 @@ def process_query(query, mode=LIBRELIB):
     options = ll.get_options(query)
     select_i = 1
     for pub in options:
+        # Print number, format indicator*, author,
+        # title, and format for each item.
         print("[{}]{}\t{}\t{}\t{}".format(
             select_i,
             [" ", "*"][pub[2] == 'mobi'],
-            _trunc(pub[0], 30), # author
-            pretty_format([GREEN], _trunc(pub[1], 30)), # title
-            pretty_format([PURPLE], pub[4] + " " + pub[2]) # format
+            _trunc(pub[0], 30),
+            pretty_format([GREEN], _trunc(pub[1], 30)),
+            pretty_format([PURPLE], pub[4] + " " + pub[2])
         ))
         select_i += 1
-    selection = input("Select the book to download (1..{}): ".format(select_i - 1))
+    selection = input(
+        "Select the book to download (1..{}): ".format(select_i - 1)
+    )
     choice = options[int(selection) - 1]
-    return _attempt_url(choice[3].replace('download', 'get'), choice[2], choice[1])
+    return _attempt_url(
+        choice[3].replace('download', 'get'), choice[2], choice[1]
+    )
+
 
 def delete_files():
     for fn in cleanups:
@@ -261,27 +266,42 @@ def delete_files():
         except:
             pass
 
+
 if __name__ == "__main__":
     read_settings()
-    parser = argparse.ArgumentParser(description='Search and send books to Kindle.')
-    parser.add_argument('--from', dest='from_email', required=False, default=None,
-                        help='An authorized sender on your Amazon account.')
-    parser.add_argument('--to', dest='to_email', required=False, default=None,
-                        help="Your Kindle's email address (foo@free.kindle.com)")
+    parser = argparse.ArgumentParser(
+        description='Search and send books to Kindle.'
+    )
+    parser.add_argument(
+        '--from', dest='from_email', required=False, default=None,
+        help='An authorized sender on your Amazon account.'
+    )
+    parser.add_argument(
+        '--to', dest='to_email', required=False, default=None,
+        help="Your Kindle's email address (foo@free.kindle.com)"
+    )
 
     parser.add_argument('--keep', dest='keep_file', action='store_true')
     parser.add_argument('--no-keep', dest='keep_file', action='store_false')
     parser.set_defaults(keep_file=False)
 
     source_group = parser.add_mutually_exclusive_group(required=True)
-    source_group.add_argument('--query', '-q', dest='query', required=False, default=None,
-                        help="If you're searching for a file, the search terms.")
-    source_group.add_argument('--file', '-f', dest='filename', required=False, default=None,
-                        help="If you're sending a downloaded file, the filename.")
-    source_group.add_argument('--url', '-u', dest='url', required=False, default=None,
-                        help="If you're sending a downloadable file, the URL.")
-    source_group.add_argument('--magnet', '-m', dest='magnet', required=False, default=None,
-                        help="If you're downloading via a magnet link")
+    source_group.add_argument(
+        '--query', '-q', dest='query', required=False, default=None,
+        help="If you're searching for a file, the search terms."
+    )
+    source_group.add_argument(
+        '--file', '-f', dest='filename', required=False, default=None,
+        help="If you're sending a downloaded file, the filename."
+    )
+    source_group.add_argument(
+        '--url', '-u', dest='url', required=False, default=None,
+        help="If you're sending a downloadable file, the URL."
+    )
+    source_group.add_argument(
+        '--magnet', '-m', dest='magnet', required=False, default=None,
+        help="If you're downloading via a magnet link"
+    )
     args = parser.parse_args()
 
     if args.filename is not None:

@@ -27,7 +27,7 @@ If you don't feel comfortable putting any of these values in plaintext in your c
 
 # Usage
 
-- Search online using the LibGen platform (only for freely available, public-domain books):
+- Search online (only for freely available, public-domain books):
     ```
     booksnake --query "My Title"
     ```
