@@ -43,6 +43,34 @@ If you don't feel comfortable putting any of these values in plaintext in your c
     booksnake --file "title.mobi"
     ```
 
+## Help Message
+```
+usage: booksnake [-h] [--from FROM_EMAIL] [--to TO_EMAIL] [--gutenberg]
+                 [--no-gutenberg] [--keep] [--no-keep] [--send] [--no-send]
+                 (--query QUERY | --file FILENAME | --url URL | --magnet MAGNET)
+
+Search and send books to Kindle.
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --from FROM_EMAIL     An authorized sender on your Amazon account.
+  --to TO_EMAIL         Your Kindle's email address (foo@free.kindle.com)
+  --gutenberg           Explicitly use Gutenberg as a search engine
+  --no-gutenberg        Explicitly DON'T use Gutenberg as a search engine
+  --keep                Keep the file(s) when booksnake exits
+  --no-keep             [Default] Delete the file(s) when booksnake exits
+  --send                [Default] Send the file when done processing
+  --no-send             Do not send the file when done processing. (Use with
+                        --keep)
+  --query QUERY, -q QUERY
+                        If you're searching for a file, the search terms.
+  --file FILENAME, -f FILENAME
+                        If you're sending a downloaded file, the filename.
+  --url URL, -u URL     If you're sending a downloadable file, the URL.
+  --magnet MAGNET, -m MAGNET
+                        If you're downloading via a magnet link
+```
+
 # TODO
 
 - Magnet links
