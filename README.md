@@ -4,6 +4,8 @@ Booksnake is a tool to search the web for ebooks and automagically send them to 
 
 > NOTE: Please only use booksnake for legal download of public-domain resources!
 
+**Pull-requests and GitHub Issues are always welcome!**
+
 ## Installation
 
 Spin up your favorite terminal, and boop this puppy right up in there:
