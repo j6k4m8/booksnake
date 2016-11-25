@@ -4,16 +4,29 @@ A command-line tool to download, convert, and send eBooks to your kindle from th
 Pull requests and bug reports welcome!
 
 # Requirements
-
 - Only tested on Ubuntu 14.04 and OS X.
 - Gmail account (do you know your password?)
+- `smtplib`, `mimetypes`, `email`, `BeautifulSoup`, as per the `requirements.txt`
+
+## Soft Requirements
 - `kindlegen`, a cli epub-to-mobi converter from Amazon. (Download [here](http://www.amazon.com/gp/feature.html?docId=1000765211).) Must be globally callable, so I moved my executable to `/bin/`: `cp ~/Downloads/kindlegen /bin/`
 - `aria2` will be used for downloading files in a future release.
-- `smtplib`, `mimetypes`, `email`, `BeautifulSoup`, `libgenapi`. pip install them all!
 
 # Setup
 
-First, create a `~/.booksnakerc` file (not necessary, but makes it so you don't have to specify `--from-email`, `--to-email`, and SMTP password every time). This is JSON:
+```
+pip install booksnake
+```
+
+Or clone this repository and install the latest version from source:
+
+```
+git clone https://github.com/j6k4m8/booksnake.git
+cd booksnake
+pip install -U .
+```
+
+Now, create a `~/.booksnakerc` file (not necessary, but makes it so you don't have to specify `--from-email`, `--to-email`, and SMTP password every time). This is JSON:
 
 ```
 {
@@ -31,7 +44,6 @@ If you don't feel comfortable putting any of these values in plaintext in your c
     ```
     booksnake --query "My Title"
     ```
-    [![asciicast](https://asciinema.org/a/2ji7kxe7840xqiyujxtjyrkkg.png)](https://asciinema.org/a/2ji7kxe7840xqiyujxtjyrkkg)
 
 - Download a book from a URL:
     ```
