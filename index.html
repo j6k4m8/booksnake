@@ -22,76 +22,78 @@
       <h1>
 <a id="booksnake" class="anchor" href="#booksnake" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>booksnake</h1>
 
-<p>A command-line tool to download, convert, and send eBooks to your kindle from the web as simply as possible, in html, pdf, epub, or mobi formats.</p>
+<p>Booksnake is a tool to search the web for ebooks and automagically send them to your Kindle (or email), all as simply as possible.</p>
 
-<p>Pull requests and bug reports welcome!</p>
+<blockquote>
+<p>NOTE: Please only use booksnake for legal download of public-domain resources!</p>
+</blockquote>
 
-<h1>
-<a id="requirements" class="anchor" href="#requirements" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Requirements</h1>
+<h2>
+<a id="installation" class="anchor" href="#installation" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Installation</h2>
 
-<ul>
-<li>Only tested on Ubuntu 14.04 and OS X.</li>
-<li>Gmail account (do you know your password?)</li>
-<li>
-<code>smtplib</code>, <code>mimetypes</code>, <code>email</code>, <code>BeautifulSoup</code>. pip install them all!
-## Optional</li>
-<li>
-<code>kindlegen</code>, a cli epub-to-mobi converter from Amazon. (Download <a href="http://www.amazon.com/gp/feature.html?docId=1000765211">here</a>.) Must be globally callable, so I moved my executable to <code>/bin/</code>: <code>cp ~/Downloads/kindlegen /bin/</code>
-</li>
-<li>
-<code>aria2</code> will be used for downloading files in a future release.</li>
-</ul>
+<p>Spin up your favorite terminal, and boop this puppy right up in there:</p>
 
-<h1>
-<a id="setup" class="anchor" href="#setup" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Setup</h1>
+<div class="highlight highlight-source-shell"><pre>pip install booksnake</pre></div>
 
-<p>First, create a <code>~/.booksnakerc</code> file (not necessary, but makes it so you don't have to specify <code>--from-email</code>, <code>--to-email</code>, and SMTP password every time). This is JSON:</p>
+<p>Q.E.D. wut up</p>
 
-<pre><code>{
-    "from_email": "you@gmail.com",
-    "smtp_password": "your gmail password",
-    "to_email": "you@free.kindle.com"
-}
-</code></pre>
+<h2>
+<a id="setup" class="anchor" href="#setup" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Setup</h2>
 
-<p>If you don't feel comfortable putting any of these values in plaintext in your config file, then just omit that line. <code>--from-email</code> and <code>--to-email</code> can be specified when you call <code>booksnake</code>, and if you omit the SMTP password, booksnake will prompt you for it once it's time to send your file.</p>
+<p>This step is entirely optional, but if you don't want to have to specify <code>--to_email</code>, <code>--from_email</code>, and then type your email password every time you send, then you can add the following to a <code>~/.booksnakerc</code>:</p>
 
-<h1>
-<a id="usage" class="anchor" href="#usage" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Usage</h1>
+<div class="highlight highlight-source-json"><pre>{
+    <span class="pl-s"><span class="pl-pds">"</span>from_email<span class="pl-pds">"</span></span>: <span class="pl-s"><span class="pl-pds">"</span>you@gmail.com<span class="pl-pds">"</span></span>,
+    <span class="pl-s"><span class="pl-pds">"</span>smtp_password<span class="pl-pds">"</span></span>: <span class="pl-s"><span class="pl-pds">"</span>your gmail password<span class="pl-pds">"</span></span>,
+    <span class="pl-s"><span class="pl-pds">"</span>to_email<span class="pl-pds">"</span></span>: <span class="pl-s"><span class="pl-pds">"</span>you@free.kindle.com<span class="pl-pds">"</span></span>
+}</pre></div>
 
-<ul>
-<li>
-<p>Search online (only for use when finding freely available, public-domain books):</p>
+<p>If you don't feel comfortable leaving your password in plaintext in your home directory (and I can't <em>possibly</em> imagine why that would be!), you can omit that keyvalue pair and enter it at runtime.</p>
 
-<pre><code>booksnake --query "My Title"
-</code></pre>
+<p>You may also choose, like I did, to make a standalone gmail for just this purpose, and then the password is a moot point.</p>
 
-<p>You will be prompted to pick an item from the list in order to download.</p>
-</li>
-<li>
-<p>Download a book from a URL:</p>
+<p><strong>Make sure that regardless of which email you use, you have added it to your <a href="https://www.amazon.com/gp/help/customer/display.html?nodeId=201974240">Authorized Senders</a> in Amazon's Kindle settings, or else Amazon will refuse to send your documents to your device.</strong></p>
 
-<pre><code>booksnake --url "http://my.books.com/title.mobi"
-</code></pre>
-</li>
-<li>
-<p>Send a local file:</p>
+<h2>
+<a id="usage" class="anchor" href="#usage" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Usage</h2>
 
-<pre><code>booksnake --file "title.mobi"
-</code></pre>
-</li>
-</ul>
+<h3>
+<a id="searching-for-downloading-and-sending-a-book" class="anchor" href="#searching-for-downloading-and-sending-a-book" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Searching for, downloading, and sending a book</h3>
 
-<h1>
-<a id="todo" class="anchor" href="#todo" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>TODO</h1>
+<div class="highlight highlight-source-shell"><pre>booksnake --query <span class="pl-s"><span class="pl-pds">"</span>Moby Dick<span class="pl-pds">"</span></span></pre></div>
 
-<ul>
-<li>Magnet links</li>
-<li>Intelligently guess what format has been downloaded (deprecate the <code>-f</code> flag)</li>
-<li>Ping the Goodreads API to add your brand new book to a specific shelf (<code>--goodreads-shelf "on-kindle"</code> or something)</li>
-</ul>
+<p><a href="https://asciinema.org/a/esbwna82m297lbwhhvm2w95ne"><img src="https://asciinema.org/a/esbwna82m297lbwhhvm2w95ne.png" alt="asciicast"></a></p>
 
-<p>Contributions and bug-reports welcome!</p>
+<h3>
+<a id="sending-a-book-from-a-known-url" class="anchor" href="#sending-a-book-from-a-known-url" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Sending a book from a known URL</h3>
+
+<div class="highlight highlight-source-shell"><pre>booksnake --url <span class="pl-s"><span class="pl-pds">"</span>http://mobydick.com/mobydick.mobi<span class="pl-pds">"</span></span></pre></div>
+
+<h3>
+<a id="sending-a-book-from-a-local-file" class="anchor" href="#sending-a-book-from-a-local-file" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Sending a book from a local file:</h3>
+
+<div class="highlight highlight-source-shell"><pre>booksnake --file <span class="pl-s"><span class="pl-pds">"</span>~/books/mobydick.mobi<span class="pl-pds">"</span></span></pre></div>
+
+<h2>
+<a id="advanced-usage" class="anchor" href="#advanced-usage" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Advanced Usage</h2>
+
+<h3>
+<a id="converting-files" class="anchor" href="#converting-files" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Converting Files</h3>
+
+<p>If you're a <em>hacking wizard</em> and you have Amazon's <a href="https://www.amazon.com/gp/feature.html?docId=1000765211"><code>kindlegen</code></a> installed, you may be able to convert some subset of epubs and pdfs to mobi, and send those to your kindle as well. As long as <code>kindlegen</code> is callable globally (e.g. you've put it in <code>/usr/bin</code> or somesuch), there's no difference in how you call booksnake:</p>
+
+<div class="highlight highlight-source-shell"><pre>booksnake --file <span class="pl-s"><span class="pl-pds">"</span>~/books/mobydick.epub<span class="pl-pds">"</span></span></pre></div>
+
+<h3>
+<a id="preventing-sends-or-keeping-files" class="anchor" href="#preventing-sends-or-keeping-files" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Preventing Sends, or Keeping Files</h3>
+
+<p>If you want to prevent booksnake from deleting the files after downloading and sending, you can pass the <code>--keep</code> flag:</p>
+
+<div class="highlight highlight-source-shell"><pre>booksnake --keep --query <span class="pl-s"><span class="pl-pds">"</span>Great Expectations<span class="pl-pds">"</span></span></pre></div>
+
+<p>You can combine this with <code>--no-send</code> if you want to <em>only</em> download and convert the file, and not send it:</p>
+
+<div class="highlight highlight-source-shell"><pre>booksnake --keep --no-send --query <span class="pl-s"><span class="pl-pds">"</span>Great Expectations<span class="pl-pds">"</span></span></pre></div>
 
       <footer class="site-footer">
         <span class="site-footer-owner"><a href="https://github.com/j6k4m8/booksnake">Booksnake</a> is maintained by <a href="https://github.com/j6k4m8">j6k4m8</a>.</span>
