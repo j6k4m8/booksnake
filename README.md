@@ -1,34 +1,22 @@
 # booksnake
-A command-line tool to download, convert, and send eBooks to your kindle from the web as simply as possible, in html, pdf, epub, or mobi formats.
 
-Pull requests and bug reports welcome!
+Booksnake is a tool to search the web for ebooks and automagically send them to your Kindle (or email), all as simply as possible.
 
-# Requirements
-- Only tested on Ubuntu 14.04 and OS X.
-- Gmail account (do you know your password?)
-- `smtplib`, `mimetypes`, `email`, `BeautifulSoup`, as per the `requirements.txt`
+> NOTE: Please only use booksnake for legal download of public-domain resources!
 
-## Soft Requirements
-- `kindlegen`, a cli epub-to-mobi converter from Amazon. (Download [here](http://www.amazon.com/gp/feature.html?docId=1000765211).) Must be globally callable, so I moved my executable to `/bin/`: `cp ~/Downloads/kindlegen /bin/`
-- `aria2` will be used for downloading files in a future release.
+## Installation
 
-# Setup
-
-```
+Spin up your favorite terminal, and boop this puppy right up in there:
+```shell
 pip install booksnake
 ```
 
-Or clone this repository and install the latest version from source:
+Q.E.D. wut up
 
-```
-git clone https://github.com/j6k4m8/booksnake.git
-cd booksnake
-pip install -U .
-```
+## Setup
+This step is entirely optional, but if you don't want to have to specify `--to_email`, `--from_email`, and then type your email password every time you send, then you can add the following to a `~/.booksnakerc`:
 
-Now, create a `~/.booksnakerc` file (not necessary, but makes it so you don't have to specify `--from-email`, `--to-email`, and SMTP password every time). This is JSON:
-
-```
+```json
 {
     "from_email": "you@gmail.com",
     "smtp_password": "your gmail password",
@@ -36,55 +24,50 @@ Now, create a `~/.booksnakerc` file (not necessary, but makes it so you don't ha
 }
 ```
 
-If you don't feel comfortable putting any of these values in plaintext in your config file, then just omit that line. `--from-email` and `--to-email` can be specified when you call `booksnake`, and if you omit the SMTP password, booksnake will prompt you for it once it's time to send your file.
+If you don't feel comfortable leaving your password in plaintext in your home directory (and I can't _possibly_ imagine why that would be!), you can omit that keyvalue pair and enter it at runtime.
 
-# Usage
+You may also choose, like I did, to make a standalone gmail for just this purpose, and then the password is a moot point.
 
-- Search online (only for freely available, public-domain books):
-    ```
-    booksnake --query "My Title"
-    ```
+**Make sure that regardless of which email you use, you have added it to your [Authorized Senders](https://www.amazon.com/gp/help/customer/display.html?nodeId=201974240) in Amazon's Kindle settings, or else Amazon will refuse to send your documents to your device.**
 
-- Download a book from a URL:
-    ```
-    booksnake --url "http://my.books.com/title.mobi"
-    ```
+## Usage
 
-- Send a local file:
-    ```
-    booksnake --file "title.mobi"
-    ```
+### Searching for, downloading, and sending a book
 
-## Help Message
-```
-usage: booksnake [-h] [--from FROM_EMAIL] [--to TO_EMAIL] [--gutenberg]
-                 [--no-gutenberg] [--keep] [--no-keep] [--send] [--no-send]
-                 (--query QUERY | --file FILENAME | --url URL | --magnet MAGNET)
-
-Search and send books to Kindle.
-
-optional arguments:
-  -h, --help            show this help message and exit
-  --from FROM_EMAIL     An authorized sender on your Amazon account.
-  --to TO_EMAIL         Your Kindle's email address (foo@free.kindle.com)
-  --gutenberg           Explicitly use Gutenberg as a search engine
-  --no-gutenberg        Explicitly DON'T use Gutenberg as a search engine
-  --keep                Keep the file(s) when booksnake exits
-  --no-keep             [Default] Delete the file(s) when booksnake exits
-  --send                [Default] Send the file when done processing
-  --no-send             Do not send the file when done processing. (Use with
-                        --keep)
-  --query QUERY, -q QUERY
-                        If you're searching for a file, the search terms.
-  --file FILENAME, -f FILENAME
-                        If you're sending a downloaded file, the filename.
-  --url URL, -u URL     If you're sending a downloadable file, the URL.
-  --magnet MAGNET, -m MAGNET
-                        If you're downloading via a magnet link
+```shell
+booksnake --query "Moby Dick"
 ```
 
-# TODO
+[![asciicast](https://asciinema.org/a/esbwna82m297lbwhhvm2w95ne.png)](https://asciinema.org/a/esbwna82m297lbwhhvm2w95ne)
 
-- Magnet links
-- Intelligently guess what format has been downloaded (deprecate the `-f` flag)
-- Ping the Goodreads API to add your brand new book to a specific shelf (`--goodreads-shelf "on-kindle"` or something)
+### Sending a book from a known URL
+```shell
+booksnake --url "http://mobydick.com/mobydick.mobi"
+```
+
+### Sending a book from a local file:
+```shell
+booksnake --file "~/books/mobydick.mobi"
+```
+
+## Advanced Usage
+
+### Converting Files
+If you're a _hacking wizard_ and you have Amazon's [`kindlegen`](https://www.amazon.com/gp/feature.html?docId=1000765211) installed, you may be able to convert some subset of epubs and pdfs to mobi, and send those to your kindle as well. As long as `kindlegen` is callable globally (e.g. you've put it in `/usr/bin` or somesuch), there's no difference in how you call booksnake:
+
+```shell
+booksnake --file "~/books/mobydick.epub"
+```
+
+### Preventing Sends, or Keeping Files
+If you want to prevent booksnake from deleting the files after downloading and sending, you can pass the `--keep` flag:
+
+```shell
+booksnake --keep --query "Great Expectations"
+```
+
+You can combine this with `--no-send` if you want to _only_ download and convert the file, and not send it:
+
+```shell
+booksnake --keep --no-send --query "Great Expectations"
+```
