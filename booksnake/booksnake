@@ -115,7 +115,7 @@ def cli_chooser(options):
             select_i,
             [" ", "*"][pub[2] == 'mobi'],
             _trunc(pub[0], 20),
-            pretty_format([GREEN], _trunc(pub[1], 30)),
+            pretty_format([GREEN], _trunc(pub[1], 40)),
             pretty_format([PURPLE], _trunc(pub[4], 7) + " " + pub[2])
         ))
         select_i += 1
@@ -133,22 +133,18 @@ def always_choose_the_first_mobi_chooser(options):
         select_i += 1
 
 
-def process_query(query, mode=[GUTENBERG, LIBRELIB], chooser=cli_chooser):
+def process_query(query, modes=[], chooser=cli_chooser):
     """
     Process a query.
     """
-    searchers = []
-    if type(mode) is not list:
-        mode = [mode]
+    if type(modes) is not list:
+        modes = [modes]
 
-    if GUTENBERG in mode:
-        searchers.append(GutenbergSearcher())
-
-    if LIBRELIB in mode:
-        searchers.append(LibreLibSearcher())
+    if len(modes) is 0:
+        modes = [GutenbergSearcher(), LibreLibSearcher(), LibgenSearcher()]
 
     options = []
-    for s in searchers:
+    for s in modes:
         options += s.get_options(query)
 
     selection = chooser(options)
@@ -158,7 +154,7 @@ def process_query(query, mode=[GUTENBERG, LIBRELIB], chooser=cli_chooser):
     )
 
 
-def delete_files(cleanups):
+def delete_files():
     for fn in cleanups:
         try:
             os.remove(fn)
@@ -235,12 +231,13 @@ if __name__ == "__main__":
         # search if all else fails.
         searchers = []
         if sum([args.use_gutenberg, settings['searchers.gutenberg']]):
-            searchers.append(GUTENBERG)
-        searchers.append(LIBRELIB)
-        filename = process_query(args.query, mode=searchers)
+            searchers.append(GutenbergSearcher())
+        searchers.append(LibreLibSearcher())
+        searchers.append(LibgenSearcher())
+        filename = process_query(args.query, modes=searchers)
 
     # Perform conversion, if necessary.
-    process_file(filename)
+    filename = process_file(filename)
     # `filename` holds the name of the file to send.
 
     if args.send_file:
@@ -248,6 +245,6 @@ if __name__ == "__main__":
                               settings=settings)
 
     if not args.keep_file:
-        delete_files(cleanups)
+        delete_files()
 
     save_settings()

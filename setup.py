@@ -1,7 +1,7 @@
 import os
 from distutils.core import setup
 
-VERSION = "0.0.1"
+VERSION = "0.0.2"
 
 # https://pythonhosted.org/an_example_pypi_project/setuptools.html
 def read(fname):
@@ -25,5 +25,9 @@ setup(
     scripts = [
         'scripts/booksnake'
     ],
-    classifiers=[]
+    classifiers=[],
+    install_requires=[
+        'getpass',
+        'BeautifulSoup'
+    ],
 )

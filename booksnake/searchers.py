@@ -40,6 +40,27 @@ class LibreLibSearcher(BooksnakeSearcher):
         return options
 
 
+class LibgenSearcher(BooksnakeSearcher):
+    def __init__(self):
+        self.base_url = "http://libgen.io/foreignfiction/index.php?s={}&f_lang=English&f_columns=0&f_ext=All"
+
+    def get_options(self, query):
+        query = query.replace(' ', '+')
+        f = urllib.request.FancyURLopener({}).open(self.base_url.format(query))
+        content = f.read()
+        soup = BeautifulSoup(content, 'html.parser')
+        options = []
+        for a in soup.findAll('table')[-1].findAll('tr'):
+            options.append([
+                a.findAll('td')[0].text.strip(),
+                a.findAll('td')[1].text.strip() + " " + a.findAll('td')[2].text.strip(),
+                a.findAll('td')[-1].text.strip().split('(')[0],
+                "http://libgen.io" + a.findAll('a')[-1].get('href').replace('ads.php', 'get.php'),
+                a.findAll('td')[-1].text.strip().split('(')[1][:-1]
+            ])
+        return options
+
+
 class GutenbergSearcher(BooksnakeSearcher):
     def __init__(self):
         self.base_url = "https://www.gutenberg.org"
