@@ -64,7 +64,6 @@ class LibgenSearcher(BooksnakeSearcher):
                 ),
                 a.findAll('td')[-1].text.strip().split('(')[0],
                 (
-                    "http://libgen.io" +
                     a.findAll('a')[-1].get('href').replace(
                         'ads.php', 'get.php'
                     )
