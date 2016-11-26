@@ -7,7 +7,7 @@ git push --tags
 python setup.py sdist upload -r pypi
 """
 
-VERSION = "0.1.1"
+VERSION = "0.1.2"
 
 # https://pythonhosted.org/an_example_pypi_project/setuptools.html
 def read(fname):
@@ -33,6 +33,6 @@ setup(
     ],
     classifiers=[],
     install_requires=[
-        'BeautifulSoup'
+        'beautifulsoup4'
     ],
 )
