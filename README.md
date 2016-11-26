@@ -1,5 +1,7 @@
 # booksnake
 
+**[![CircleCI](https://circleci.com/gh/j6k4m8/booksnake.svg?style=svg)](https://circleci.com/gh/j6k4m8/booksnake)**
+
 Booksnake is a tool to search the web for ebooks and automagically send them to your Kindle (or email), all as simply as possible.
 
 > NOTE: Please only use booksnake for legal download of public-domain resources!
