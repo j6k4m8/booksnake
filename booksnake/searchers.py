@@ -55,6 +55,11 @@ class LibgenSearcher(BooksnakeSearcher):
         soup = BeautifulSoup(content, 'html.parser')
         options = []
         for a in soup.findAll('table')[-1].findAll('tr'):
+            link = a.findAll('a')[-1].get('href').replace(
+                'ads.php', 'get.php'
+            )
+            if link[0] == "/":
+                link = "http://libgen.io" + link
             options.append([
                 a.findAll('td')[0].text.strip(),
                 (
@@ -63,11 +68,7 @@ class LibgenSearcher(BooksnakeSearcher):
                     a.findAll('td')[2].text.strip()
                 ),
                 a.findAll('td')[-1].text.strip().split('(')[0],
-                (
-                    a.findAll('a')[-1].get('href').replace(
-                        'ads.php', 'get.php'
-                    )
-                ),
+                link,
                 a.findAll('td')[-1].text.strip().split('(')[1][:-1]
             ])
         return options
