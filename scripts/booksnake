@@ -18,6 +18,7 @@ except NameError:
 
 settings = {}
 cleanups = []
+HANDLED_FILETYPES = ['mobi', 'html']
 
 
 def read_settings():
@@ -62,7 +63,7 @@ def process_file(filename):
         raise ValueError("No such file {}.".format(filename))
 
     ext = filename.split('.')[-1]
-    if ext != 'mobi':
+    if ext not in HANDLED_FILETYPES:
         # We need to convert.
         filename = convert_file(filename, ext)
     return filename
@@ -230,7 +231,10 @@ if __name__ == "__main__":
     else:
         # search if all else fails.
         searchers = []
-        if sum([args.use_gutenberg, settings.get('searchers.gutenberg', False)]):
+        if sum([
+            args.use_gutenberg,
+            settings.get('searchers.gutenberg', False)
+        ]):
             searchers.append(GutenbergSearcher())
         searchers.append(LibreLibSearcher())
         searchers.append(LibgenSearcher())
