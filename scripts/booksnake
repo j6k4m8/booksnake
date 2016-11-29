@@ -130,6 +130,12 @@ def _attempt_url(url, fmt="mobi", fname=None):
 def process_url(url):
     """
     Process a url.
+
+    Arguments:
+        url (str): The HTTP url to attempt
+
+    Returns:
+        str: The filename as downloaded by _attempt_url
     """
     return _attempt_url(url)
 
@@ -137,11 +143,30 @@ def process_url(url):
 def process_magnet(magnet):
     """
     Process a magnet.
+
+    Arguments:
+        magnet (str): The magnet link url
+
+    Returns:
+        str: The filename, as downloaded by the magnet downloader
     """
+    raise NotImplemented
     pass
 
 
 def _trunc(s, length):
+    """
+    Truncation helper-function to truncate string s at length=length.
+    If len(s) < length, returns s with space-padding. If len(s) > length,
+    return s, ending with ellipses (...), total-length = length.
+
+    Arguments:
+        s (str): The string to truncate
+        length (int): The length at which to truncate
+
+    Returns:
+        str: Truncated string
+    """
     if len(s) > length:
         return s[:length - 3] + "..."
     else:
@@ -154,6 +179,15 @@ GUTENBERG = 2
 
 
 def cli_chooser(options):
+    """
+    A chooser that uses the CLI to let the user pick desired option.
+
+    Arguments:
+        options (str[][]): A list of options to provide
+
+    Returns:
+        Index into `options` to choose
+    """
     select_i = 1
     for pub in options:
         # Print number, format indicator*, author,
@@ -173,6 +207,15 @@ def cli_chooser(options):
 
 
 def always_choose_the_first_mobi_chooser(options):
+    """
+    A chooser that just picks the first mobi that it sees. Promiscuous!
+
+    Arguments:
+        options (str[][]): A list of options to provide
+
+    Returns:
+        Index into `options`
+    """
     select_i = 1
     for pub in options:
         if pub[2] == 'mobi':
@@ -182,7 +225,17 @@ def always_choose_the_first_mobi_chooser(options):
 
 def process_query(query, modes=[], chooser=cli_chooser):
     """
-    Process a query.
+    Process a search query
+
+    Arguments:
+        query (str): The query to search for. Needn't be escaped!
+        modes (booksnake.searcher.BooksnakeSearcher[] : []): The searchers to
+            use when looking up the query. If none are specified, all are used
+        chooser (fn : cli_chooser): Which chooser to use when selecting. Uses
+            the CLI when none is specified.
+
+    Returns:
+        str: filename of the downloaded file
     """
     if type(modes) is not list:
         modes = [modes]
@@ -202,6 +255,9 @@ def process_query(query, modes=[], chooser=cli_chooser):
 
 
 def delete_files():
+    """
+    Remove all of the files in the `cleanup` array.
+    """
     for fn in cleanups:
         try:
             os.remove(fn)
