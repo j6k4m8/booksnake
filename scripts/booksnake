@@ -25,12 +25,20 @@ def read_settings():
     """
     Read in the settings from a ~/.booksnakerc. If the file does not exist,
     then generate a new file.
+
+    Arguments:
+        None
+
+    Returns:
+        None
     """
     global settings
     try:
+        # Open the settings file
         with open(os.path.expanduser('~/.booksnakerc'), 'r') as setfh:
             settings = json.load(setfh)
     except:
+        # Indicate that a reconcilable failure occurred:
         pretty_print([YELLOW], "No ~/.booksnakerc file found, creating...")
         settings = {}
         save_settings()
@@ -39,16 +47,38 @@ def read_settings():
 def save_settings():
     """
     Write settings to ~/.booksnakerc.
+
+    Arguments:
+        None
+
+    Returns:
+        None
     """
     with open(os.path.expanduser('~/.booksnakerc'), 'w+') as setfh:
+        # Write the settings to disk:
         json.dump(
             settings, setfh, sort_keys=True, indent=4, ensure_ascii=False
         )
 
 
-def convert_file(filename, ext):
+def convert_file(filename):
+    """
+    Convert a file, using kindlegen.
+    TODO: Possibly to utilize fallback converters such as pandoc?
+
+    Arguments:
+        filename (str): The path to the file on disk
+
+    Returns:
+        str: The new filename, after conversion
+    """
+    # Call the kindlegen executable.
     os.system('kindlegen "{}"'.format(filename))
+
+    # Add the current filename to the list of things to delete:
     cleanups.append(filename)
+
+    # "Guess" the name that the converted file will have:
     filename = ".".join(filename.split('.')[:-1]) + ".mobi"
     cleanups.append(filename)
     return filename
@@ -57,6 +87,12 @@ def convert_file(filename, ext):
 def process_file(filename):
     """
     Process a file.
+
+    Arguments:
+        filename (str): The path to the file on disk
+
+    Returns:
+        str: The filename of the processed file
     """
     filename = os.path.expanduser(filename)
     if not os.path.exists(filename):
@@ -65,17 +101,27 @@ def process_file(filename):
     ext = filename.split('.')[-1]
     if ext not in HANDLED_FILETYPES:
         # We need to convert.
-        filename = convert_file(filename, ext)
+        filename = convert_file(filename)
     return filename
 
 
 def _attempt_url(url, fmt="mobi", fname=None):
     """
     Attempts to download a file. Returns `None` if the download fails.
+
+    Arguments:
+        url (str): The url to attempt
+        fmt (str : 'mobi'): The format of the downloaded asset, if known
+        fname (st : None): The filename to which the file should be saved
+
+    Returns:
+        str: The filename of the downloaded file
     """
     if fname is None:
+        # Make up your own name:
         filename = ".booksnake_{}.{}".format(str(int(time.time())), fmt)
     else:
+        # A name was specified, use that:
         filename = "{}.{}".format(fname, fmt)
     filename, _ = urlretrieve(url, filename)
     return filename
