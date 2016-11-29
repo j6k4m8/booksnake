@@ -7,13 +7,7 @@ git push --tags
 python setup.py sdist upload -r pypi
 """
 
-VERSION = "0.1.3"
-
-
-# https://pythonhosted.org/an_example_pypi_project/setuptools.html
-def read(fname):
-    return open(os.path.join(os.path.dirname(__file__), fname)).read()
-
+VERSION = "0.1.4"
 
 setup(
     name="booksnake",
@@ -29,7 +23,6 @@ setup(
     ],
     url="https://github.com/j6k4m8/booksnake/tarball/" + VERSION,
     packages=['booksnake'],
-    long_description=read('README.md'),
     scripts=[
         'scripts/booksnake'
     ],

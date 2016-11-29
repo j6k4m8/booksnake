@@ -230,7 +230,7 @@ if __name__ == "__main__":
     else:
         # search if all else fails.
         searchers = []
-        if sum([args.use_gutenberg, settings['searchers.gutenberg']]):
+        if sum([args.use_gutenberg, settings.get('searchers.gutenberg', False)]):
             searchers.append(GutenbergSearcher())
         searchers.append(LibreLibSearcher())
         searchers.append(LibgenSearcher())
