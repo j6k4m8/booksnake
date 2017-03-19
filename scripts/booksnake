@@ -245,7 +245,13 @@ def process_query(query, modes=[], chooser=cli_chooser):
 
     options = []
     for s in modes:
-        options += s.get_options(query)
+        try:
+            # This fails in cases where the website is down or the HTML has
+            # changed dramatically:
+            options += s.get_options(query)
+        except:
+            # Should probably print out here or something...
+            pass
 
     selection = chooser(options)
     choice = options[int(selection) - 1]
