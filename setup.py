@@ -7,7 +7,7 @@ git push --tags
 python setup.py sdist upload -r pypi
 """
 
-VERSION = "0.1.6"
+VERSION = "0.2.0"
 
 setup(
     name="booksnake",

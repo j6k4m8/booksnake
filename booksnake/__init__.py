@@ -1,4 +1,11 @@
 #!/usr/bin/env python3
+
+"""
+The main driver for booksnake.
+
+Download some delicious reads!
+"""
+
 from __future__ import absolute_import
 import os
 import sys
@@ -23,14 +30,16 @@ HANDLED_FILETYPES = ['mobi', 'html']
 
 def read_settings():
     """
-    Read in the settings from a ~/.booksnakerc. If the file does not exist,
-    then generate a new file.
+    Read in the settings from a ~/.booksnakerc.
+
+    If the file does not exist, then generate a new file.
 
     Arguments:
         None
 
     Returns:
         None
+
     """
     global settings
     try:
@@ -53,6 +62,7 @@ def save_settings():
 
     Returns:
         None
+
     """
     with open(os.path.expanduser('~/.booksnakerc'), 'w+') as setfh:
         # Write the settings to disk:
@@ -64,6 +74,7 @@ def save_settings():
 def convert_file(filename):
     """
     Convert a file, using kindlegen.
+
     TODO: Possibly to utilize fallback converters such as pandoc?
 
     Arguments:
@@ -71,6 +82,7 @@ def convert_file(filename):
 
     Returns:
         str: The new filename, after conversion
+
     """
     # Call the kindlegen executable.
     os.system('kindlegen "{}"'.format(filename))
@@ -93,6 +105,7 @@ def process_file(filename):
 
     Returns:
         str: The filename of the processed file
+
     """
     filename = os.path.expanduser(filename)
     if not os.path.exists(filename):
@@ -107,7 +120,7 @@ def process_file(filename):
 
 def _attempt_url(url, fmt="mobi", fname=None):
     """
-    Attempts to download a file. Returns `None` if the download fails.
+    Attempt to download a file. Returns `None` if the download fails.
 
     Arguments:
         url (str): The url to attempt
@@ -116,6 +129,7 @@ def _attempt_url(url, fmt="mobi", fname=None):
 
     Returns:
         str: The filename of the downloaded file
+
     """
     if fname is None:
         # Make up your own name:
@@ -136,6 +150,7 @@ def process_url(url):
 
     Returns:
         str: The filename as downloaded by _attempt_url
+
     """
     return _attempt_url(url)
 
@@ -149,13 +164,15 @@ def process_magnet(magnet):
 
     Returns:
         str: The filename, as downloaded by the magnet downloader
+
     """
-    raise NotImplemented
-    pass
+    raise NotImplementedError
 
 
-def _trunc(s, length):
+def _trunc(truncatable, length):
     """
+    Truncate a string s to length, including "...".
+
     Truncation helper-function to truncate string s at length=length.
     If len(s) < length, returns s with space-padding. If len(s) > length,
     return s, ending with ellipses (...), total-length = length.
@@ -166,12 +183,13 @@ def _trunc(s, length):
 
     Returns:
         str: Truncated string
+
     """
-    if len(s) > length:
-        return s[:length - 3] + "..."
+    if len(truncatable) > length:
+        return truncatable[:length - 3] + "..."
     else:
-        return (s + (" " * length))[:length]
-    return s
+        return (truncatable + (" " * length))[:length]
+    return truncatable
 
 
 LIBRELIB = 1
@@ -187,17 +205,18 @@ def cli_chooser(options):
 
     Returns:
         Index into `options` to choose
+
     """
     select_i = 1
     for pub in options:
         # Print number, format indicator*, author,
-        # title, and format for each item.
+        # title, size, and format for each item.
         print("[{}]{}\t{}\t{}\t{}".format(
             select_i,
-            [" ", "*"][pub[2] == 'mobi'],
-            _trunc(pub[0], 20),
-            pretty_format([GREEN], _trunc(pub[1], 40)),
-            pretty_format([PURPLE], _trunc(pub[4], 7) + " " + pub[2])
+            [" ", "*"][pub.fmt == 'mobi'],
+            _trunc(pub.author, 20),
+            pretty_format([GREEN], _trunc(pub.title, 40)),
+            pretty_format([PURPLE], _trunc(pub.size, 7) + " " + pub.fmt)
         ))
         select_i += 1
     selection = input(
@@ -218,14 +237,14 @@ def always_choose_the_first_mobi_chooser(options):
     """
     select_i = 1
     for pub in options:
-        if pub[2] == 'mobi':
+        if pub.fmt == 'mobi':
             return select_i
         select_i += 1
 
 
 def process_query(query, modes=[], chooser=cli_chooser):
     """
-    Process a search query
+    Process a search query.
 
     Arguments:
         query (str): The query to search for. Needn't be escaped!
@@ -236,6 +255,7 @@ def process_query(query, modes=[], chooser=cli_chooser):
 
     Returns:
         str: filename of the downloaded file
+
     """
     if type(modes) is not list:
         modes = [modes]
@@ -256,22 +276,31 @@ def process_query(query, modes=[], chooser=cli_chooser):
     selection = chooser(options)
     choice = options[int(selection) - 1]
     return _attempt_url(
-        choice[3].replace('download', 'get'), choice[2], choice[1]
+        # choice[3].replace('download', 'get'), choice[2], choice[1]
+        choice.url, choice.fmt, choice.title
     )
 
 
 def delete_files():
     """
     Remove all of the files in the `cleanup` array.
+
+    If a deletion fails, does not notify the user.
     """
-    for fn in cleanups:
+    for fname in cleanups:
         try:
-            os.remove(fn)
-        except:
+            os.remove(fname)
+        except OSError as exp:
             pass
 
 
-if __name__ == "__main__":
+def main():
+    """
+    CLI main fn.
+
+    Args:
+        None
+    """
     read_settings()
     parser = argparse.ArgumentParser(
         description='Search and send books to Kindle.'
@@ -295,18 +324,22 @@ if __name__ == "__main__":
     )
     parser.set_defaults(use_gutenberg=False)
 
-    parser.add_argument('--keep', dest='keep_file', action='store_true',
+    parser.add_argument(
+        '--keep', dest='keep_file', action='store_true',
         help="Keep the file(s) when booksnake exits"
     )
-    parser.add_argument('--no-keep', dest='keep_file', action='store_false',
+    parser.add_argument(
+        '--no-keep', dest='keep_file', action='store_false',
         help="[Default] Delete the file(s) when booksnake exits"
     )
     parser.set_defaults(keep_file=False)
 
-    parser.add_argument('--send', dest='send_file', action='store_true',
+    parser.add_argument(
+        '--send', dest='send_file', action='store_true',
         help="[Default] Send the file when done processing"
     )
-    parser.add_argument('--no-send', dest='send_file', action='store_false',
+    parser.add_argument(
+        '--no-send', dest='send_file', action='store_false',
         help="Do not send the file when done processing. (Use with --keep)"
     )
     parser.set_defaults(send_file=True)
@@ -360,3 +393,8 @@ if __name__ == "__main__":
         delete_files()
 
     save_settings()
+
+
+
+if __name__ == "__main__":
+    main()

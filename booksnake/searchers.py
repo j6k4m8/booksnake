@@ -1,6 +1,7 @@
 import urllib
 import urllib.request
 from bs4 import BeautifulSoup
+import re
 
 # Uniformize "urlretrieve"
 try:
@@ -9,9 +10,20 @@ except:
     urlretrieve = urllib.request.urlretrieve
 
 
-class BooksnakeSearcher:
+class BooksnakeOption(object):
+    def __init__(self, url, size, fmt, title, author):
+        self.url = url
+        self.size = size
+        self.fmt = fmt
+        self.title = title
+        self.author = author
+
+
+class BooksnakeSearcher(object):
     """
-    The abstract searcher class for remote query lookup. Not useful to you!
+    The abstract searcher class for remote query lookup.
+    Not useful to you!
+
     """
     def __init__(self):
         self.base_url = ""
@@ -32,6 +44,8 @@ class BooksnakeSearcher:
 class LibreLibSearcher(BooksnakeSearcher):
     """
     Searches www.librelib.com
+
+    Appears to be defunct.
     """
     def __init__(self):
         self.base_url = "http://www.librelib.com"
@@ -42,13 +56,13 @@ class LibreLibSearcher(BooksnakeSearcher):
         f = urllib.request.FancyURLopener({}).open(self.base_url + query)
         content = f.read()
         soup = BeautifulSoup(content, 'html.parser')
-        options = [[
-            a.findAll('a')[0].text.strip(),     # author
-            a.findAll('a')[1].text.strip(),     # title
-            a.findAll('a')[-1].text.strip(),    # format
-            a.findAll('a')[-1].get('href'),     # link
-            a.findAll('td')[-2].text.strip()    # size
-        ] for a in soup.findAll('tr')[1:]]
+        options = [BooksnakeOption(
+            author=a.findAll('a')[0].text.strip(),     # author
+            title=a.findAll('a')[1].text.strip(),      # title
+            fmt=a.findAll('a')[-1].text.strip(),       # format
+            url=a.findAll('a')[-1].get('href'),        # link
+            size=a.findAll('td')[-2].text.strip()      # size
+        ) for a in soup.findAll('tr')[1:]]
         return options
 
 
@@ -70,22 +84,39 @@ class LibgenSearcher(BooksnakeSearcher):
         soup = BeautifulSoup(content, 'html.parser')
         options = []
         for a in soup.findAll('table')[-1].findAll('tr'):
-            link = a.findAll('a')[-1].get('href').replace(
+            link = a.findAll('a')[-2].get('href').replace(
                 'ads.php', 'get.php'
             )
             if link[0] == "/":
                 link = "http://libgen.io" + link
-            options.append([
-                a.findAll('td')[0].text.strip(),
-                (
+
+            size = "   "
+            try:
+                size = re.findall(".*\((.*)\).*", a.findAll('td')[-1].text.strip())[0]
+            except:
+                pass
+            options.append(BooksnakeOption(
+                url=link,
+                size=size,
+                fmt=a.findAll('td')[-1].text.strip().split('(')[0],
+                title=(
                     a.findAll('td')[1].text.strip() +
                     " " +
                     a.findAll('td')[2].text.strip()
                 ),
-                a.findAll('td')[-1].text.strip().split('(')[0],
-                link,
-                a.findAll('td')[-1].text.strip().split('(')[1][:-1]
-            ])
+                author=a.findAll('td')[0].text.strip()
+            ))
+            # options.append([
+            #     a.findAll('td')[0].text.strip(),
+            #     (
+            #         a.findAll('td')[1].text.strip() +
+            #         " " +
+            #         a.findAll('td')[2].text.strip()
+            #     ),
+            #     a.findAll('td')[-1].text.strip().split('(')[0],
+            #     link,
+            #     a.findAll('td')[-1].text.strip().split('(')[1][:-1]
+            # ])
         return options
 
 
