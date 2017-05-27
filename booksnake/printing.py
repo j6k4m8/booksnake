@@ -11,6 +11,17 @@ END = '\033[0m'
 
 
 def pretty_print(colors, text, cr=True):
+    """
+    Print text to stdout
+
+    Arguments:
+        colors (str[]): An array of colors (such as those defined above)
+        text (str): The text to colorize
+        cr (boolean : True): Whether to include carriage returns or not
+
+    Returns:
+        None
+    """
     if type(colors) == list:
         pre = ''.join(colors)
     else:
@@ -23,6 +34,16 @@ def pretty_print(colors, text, cr=True):
 
 
 def pretty_format(colors, text):
+    """
+    Performs nesting of text inside coloration terminals
+
+    Arguments:
+        colors (str[]): An array of colors (such as those defined above)
+        text (str): The text to colorize
+
+    Returns:
+        str: Formatted string, nested in formatters
+    """
     if type(colors) == list:
         pre = ''.join(colors)
     else:

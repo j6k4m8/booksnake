@@ -10,17 +10,29 @@ except:
 
 
 class BooksnakeSearcher:
+    """
+    The abstract searcher class for remote query lookup. Not useful to you!
+    """
     def __init__(self):
         self.base_url = ""
 
     def url(self, suffix=""):
+        """
+        Generate a URL for this searcher
+        """
         return "{}/{}".format(self.base_url, suffix)
 
     def get_options(self, query):
+        """
+        Return options based on a query, using this searcher
+        """
         pass
 
 
 class LibreLibSearcher(BooksnakeSearcher):
+    """
+    Searches www.librelib.com
+    """
     def __init__(self):
         self.base_url = "http://www.librelib.com"
 
@@ -41,6 +53,9 @@ class LibreLibSearcher(BooksnakeSearcher):
 
 
 class LibgenSearcher(BooksnakeSearcher):
+    """
+    Searches libgen.io
+    """
     def __init__(self):
         self.base_url = (
             "http://libgen.io" +
@@ -75,6 +90,9 @@ class LibgenSearcher(BooksnakeSearcher):
 
 
 class GutenbergSearcher(BooksnakeSearcher):
+    """
+    Searches Project Gutenberg
+    """
     def __init__(self):
         self.base_url = "https://www.gutenberg.org"
 
