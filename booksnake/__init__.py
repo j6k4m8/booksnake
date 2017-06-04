@@ -301,6 +301,7 @@ def main():
     Args:
         None
     """
+    global cleanups
     read_settings()
     parser = argparse.ArgumentParser(
         description='Search and send books to Kindle.'
