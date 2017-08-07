@@ -4,7 +4,7 @@ import email
 import email.mime.application
 try:
     import email.mime.Multipart
-except:
+except Exception as exc:
     import email.mime.multipart
 import getpass
 
@@ -26,7 +26,7 @@ def send_file(filename, from_email=None, to_email=None, settings={}):
 
     try:
         m = email.mime.Multipart.MIMEMultipart()
-    except:
+    except Exception as exc:
         m = email.mime.multipart.MIMEMultipart()
     m['Subject'] = ''
     m['From'] = from_email

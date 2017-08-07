@@ -6,7 +6,7 @@ import re
 # Uniformize "urlretrieve"
 try:
     urlretrieve = urllib.urlretrieve
-except:
+except Exception as exc:
     urlretrieve = urllib.request.urlretrieve
 
 
@@ -66,6 +66,35 @@ class LibreLibSearcher(BooksnakeSearcher):
         return options
 
 
+class ManyBooksSearcher(BooksnakeSearcher):
+    """
+    Searches www.manybooks.net
+    """
+    def __init__(self):
+        self.base_url = "http://www.manybooks.net"
+
+    def get_options(self, query):
+        query = query.replace(' ', '+')
+        query = "/search.php?search=" + query
+        f = urllib.request.FancyURLopener({}).open(self.base_url + query)
+        content = f.read()
+        soup = BeautifulSoup(content, 'html.parser')
+        entries = soup.find_all('div', class_=["row", "grid_12"])
+        options = [BooksnakeOption(
+            author=re.findall("<br/>by (.*)", str(a))[0],
+            title=a.find_all("a")[0].text,
+            fmt="azw",
+            url="{}/send/1:kindle:.azw:kindle/{}/{}.azw".format(
+                self.base_url, *[
+                    a.find_all('a')[0].attrs['href']
+                    .replace(".html", "")
+                    .replace("/titles/", "")
+                ] * 2),
+            size="?"
+        ) for a in entries]
+        return options
+
+
 class LibgenSearcher(BooksnakeSearcher):
     """
     Searches libgen.io
@@ -92,8 +121,11 @@ class LibgenSearcher(BooksnakeSearcher):
 
             size = "   "
             try:
-                size = re.findall(".*\((.*)\).*", a.findAll('td')[-1].text.strip())[0]
-            except:
+                size = re.findall(
+                    ".*\((.*)\).*",
+                    a.findAll('td')[-1].text.strip()
+                )[0]
+            except Exception as exc:
                 pass
             options.append(BooksnakeOption(
                 url=link,
@@ -133,7 +165,7 @@ class GutenbergSearcher(BooksnakeSearcher):
         f = urllib.request.FancyURLopener({}).open(self.base_url + query)
         try:
             content = f.read()
-        except:
+        except Exception as exc:
             pretty_print([RED, UNDERLINE], "RATE LIMITED!")
             pretty_print(
                 [YELLOW],

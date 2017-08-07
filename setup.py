@@ -1,13 +1,15 @@
 import os
 from distutils.core import setup
 
+import booksnake
+
 """
 git tag {VERSION}
 git push --tags
 python setup.py sdist upload -r pypi
 """
 
-VERSION = "0.2.0"
+VERSION = booksnake.__version__
 
 setup(
     name="booksnake",

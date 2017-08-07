@@ -17,6 +17,8 @@ from booksnake.printing import *
 from booksnake.searchers import *
 from booksnake.sending import *
 
+__version__ = "0.2.1"
+
 # Uniformize 'input()'
 try:
     input = raw_input
@@ -25,7 +27,7 @@ except NameError:
 
 settings = {}
 cleanups = []
-HANDLED_FILETYPES = ['mobi', 'html']
+HANDLED_FILETYPES = ['mobi', 'html', 'azw']
 
 
 def read_settings():
@@ -46,7 +48,7 @@ def read_settings():
         # Open the settings file
         with open(os.path.expanduser('~/.booksnakerc'), 'r') as setfh:
             settings = json.load(setfh)
-    except:
+    except Exception as exc:
         # Indicate that a reconcilable failure occurred:
         pretty_print([YELLOW], "No ~/.booksnakerc file found, creating...")
         settings = {}
@@ -269,7 +271,7 @@ def process_query(query, modes=[], chooser=cli_chooser):
             # This fails in cases where the website is down or the HTML has
             # changed dramatically:
             options += s.get_options(query)
-        except:
+        except Exception as exc:
             # Should probably print out here or something...
             pass
 
@@ -347,6 +349,11 @@ def main():
 
     source_group = parser.add_mutually_exclusive_group(required=True)
     source_group.add_argument(
+        '--version', '-v', dest='version', required=False, default=False,
+        action='store_true',
+        help="Get the version of the booksnake library running here."
+    )
+    source_group.add_argument(
         '--query', '-q', dest='query', required=False, default=None,
         help="If you're searching for a file, the search terms."
     )
@@ -364,6 +371,10 @@ def main():
     )
     args = parser.parse_args()
 
+    if args.version:
+        print(__version__)
+        exit()
+
     if args.filename is not None:
         filename = args.filename
     elif args.url is not None:
@@ -379,6 +390,7 @@ def main():
         ]):
             searchers.append(GutenbergSearcher())
         searchers.append(LibreLibSearcher())
+        searchers.append(ManyBooksSearcher())
         searchers.append(LibgenSearcher())
         filename = process_query(args.query, modes=searchers)
 
@@ -394,7 +406,6 @@ def main():
         delete_files()
 
     save_settings()
-
 
 
 if __name__ == "__main__":
