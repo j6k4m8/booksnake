@@ -1,3 +1,4 @@
+booksnake.egg-info/
 *.pyc
 settings.py
 *.epub

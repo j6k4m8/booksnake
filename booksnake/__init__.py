@@ -6,6 +6,7 @@ The main driver for booksnake.
 Download some delicious reads!
 """
 
+
 from __future__ import absolute_import
 import os
 import sys
@@ -18,6 +19,7 @@ from booksnake.searchers import *
 from booksnake.sending import *
 
 __version__ = "0.2.1"
+print("October 24, 2017")
 
 # Uniformize 'input()'
 try:
@@ -138,7 +140,7 @@ def _attempt_url(url, fmt="mobi", fname=None):
         filename = ".booksnake_{}.{}".format(str(int(time.time())), fmt)
     else:
         # A name was specified, use that:
-        filename = "{}.{}".format(fname, fmt)
+        filename = "{}.{}".format(fname.strip(), fmt)
     filename, _ = urlretrieve(url, filename)
     return filename
 
@@ -200,7 +202,7 @@ GUTENBERG = 2
 
 def cli_chooser(options):
     """
-    A chooser that uses the CLI to let the user pick desired option.
+    Use the CLI to let the user pick desired option.
 
     Arguments:
         options (str[][]): A list of options to provide
@@ -218,7 +220,7 @@ def cli_chooser(options):
             [" ", "*"][pub.fmt == 'mobi'],
             _trunc(pub.author, 20),
             pretty_format([GREEN], _trunc(pub.title, 40)),
-            pretty_format([PURPLE], _trunc(pub.size, 7) + " " + pub.fmt)
+            pretty_format([PURPLE], _trunc(pub.size, 7) + " " + pub.fmt + "\t(" + pub.source + ")")
         ))
         select_i += 1
     selection = input(
@@ -267,13 +269,15 @@ def process_query(query, modes=[], chooser=cli_chooser):
 
     options = []
     for s in modes:
+        options += s.get_options(query)
         try:
             # This fails in cases where the website is down or the HTML has
             # changed dramatically:
             options += s.get_options(query)
         except Exception as exc:
             # Should probably print out here or something...
-            pass
+            pretty_print([BOLD, YELLOW], "Failed to fetch from {} with error:".format(str(s)))
+            pretty_print([YELLOW], str(exc))
 
     selection = chooser(options)
     choice = options[int(selection) - 1]
