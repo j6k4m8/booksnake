@@ -2,6 +2,7 @@ import urllib
 import urllib.request
 from bs4 import BeautifulSoup
 import re
+import requests
 
 # Uniformize "urlretrieve"
 try:
@@ -11,12 +12,13 @@ except Exception as exc:
 
 
 class BooksnakeOption(object):
-    def __init__(self, url, size, fmt, title, author):
+    def __init__(self, url, size, fmt, title, author, source="Unknown"):
         self.url = url
         self.size = size
         self.fmt = fmt
         self.title = title
         self.author = author
+        self.source = source
 
 
 class BooksnakeSearcher(object):
@@ -43,7 +45,7 @@ class BooksnakeSearcher(object):
 
 class LibreLibSearcher(BooksnakeSearcher):
     """
-    Searches www.librelib.com
+    Search www.librelib.com.
 
     Appears to be defunct.
     """
@@ -61,7 +63,8 @@ class LibreLibSearcher(BooksnakeSearcher):
             title=a.findAll('a')[1].text.strip(),      # title
             fmt=a.findAll('a')[-1].text.strip(),       # format
             url=a.findAll('a')[-1].get('href'),        # link
-            size=a.findAll('td')[-2].text.strip()      # size
+            size=a.findAll('td')[-2].text.strip(),     # size
+            source="LibreLib"
         ) for a in soup.findAll('tr')[1:]]
         return options
 
@@ -90,7 +93,8 @@ class ManyBooksSearcher(BooksnakeSearcher):
                     .replace(".html", "")
                     .replace("/titles/", "")
                 ] * 2),
-            size="?"
+            size="?",
+            source="ManyBooks"
         ) for a in entries]
         return options
 
@@ -100,24 +104,32 @@ class LibgenSearcher(BooksnakeSearcher):
     Searches libgen.io
     """
     def __init__(self):
-        self.base_url = (
+        self.ff_base_url = (
             "http://libgen.io" +
             "/foreignfiction/index.php?" +
             "s={}&f_lang=English&f_columns=0&f_ext=All"
         )
+        self.sci_base_url = (
+            "http://libgen.io" +
+            "/search.php?" +
+            "req={}"
+        )
 
-    def get_options(self, query):
-        query = query.replace(' ', '+')
-        f = urllib.request.FancyURLopener({}).open(self.base_url.format(query))
-        content = f.read()
+    def _ff_options(self, query):
+        content = requests.get(self.ff_base_url.format(query)).text
         soup = BeautifulSoup(content, 'html.parser')
         options = []
         for a in soup.findAll('table')[-1].findAll('tr'):
             link = a.findAll('a')[-2].get('href').replace(
                 'ads.php', 'get.php'
             )
+
             if link[0] == "/":
                 link = "http://libgen.io" + link
+
+            link = BeautifulSoup(
+                requests.get(link).text, 'html.parser'
+            ).findAll('a')[-1].get('href')
 
             size = "   "
             try:
@@ -136,19 +148,51 @@ class LibgenSearcher(BooksnakeSearcher):
                     " " +
                     a.findAll('td')[2].text.strip()
                 ),
-                author=a.findAll('td')[0].text.strip()
+                author=a.findAll('td')[0].text.strip(),
+                source="Libgen"
             ))
-            # options.append([
-            #     a.findAll('td')[0].text.strip(),
-            #     (
-            #         a.findAll('td')[1].text.strip() +
-            #         " " +
-            #         a.findAll('td')[2].text.strip()
-            #     ),
-            #     a.findAll('td')[-1].text.strip().split('(')[0],
-            #     link,
-            #     a.findAll('td')[-1].text.strip().split('(')[1][:-1]
-            # ])
+        return options
+
+    def _sci_options(self, query):
+        content = requests.get(self.sci_base_url.format(query)).text
+        soup = BeautifulSoup(content, 'html.parser')
+        options = []
+        for a in soup.findAll('table')[2].findAll('tr')[1:]:
+            link = [
+                ll for ll in a.findAll('a')
+                if 'ads.php' in ll.get('href', '')
+            ][0].get('href').replace(
+                'ads.php', 'get.php'
+            )
+
+            if link[0] == "/":
+                link = "http://libgen.io" + link
+
+            size = "   "
+            try:
+                size = re.findall(
+                    ".*\((.*)\).*",
+                    a.findAll('td')[-1].text.strip()
+                )[0]
+            except Exception as exc:
+                pass
+            options.append(BooksnakeOption(
+                url=link,
+                size=a.findAll('td')[7].text.strip(),
+                fmt=a.findAll('td')[8].text.strip(),
+                title=(
+                    a.findAll('td')[2].text.strip()
+                ),
+                author=a.findAll('td')[1].text.strip(),
+                source="Libgen"
+            ))
+        return options
+
+    def get_options(self, query):
+        query = query.replace(' ', '+')
+        options = []
+        # options += self._ff_options(query)
+        options += self._sci_options(query)
         return options
 
 
@@ -165,7 +209,7 @@ class GutenbergSearcher(BooksnakeSearcher):
         f = urllib.request.FancyURLopener({}).open(self.base_url + query)
         try:
             content = f.read()
-        except Exception as exc:
+        except Exception:
             pretty_print([RED, UNDERLINE], "RATE LIMITED!")
             pretty_print(
                 [YELLOW],

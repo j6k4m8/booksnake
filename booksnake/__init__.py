@@ -6,6 +6,7 @@ The main driver for booksnake.
 Download some delicious reads!
 """
 
+
 from __future__ import absolute_import
 import os
 import sys
@@ -17,16 +18,11 @@ from booksnake.printing import *
 from booksnake.searchers import *
 from booksnake.sending import *
 
-__version__ = "0.2.1"
 
-# Uniformize 'input()'
-try:
-    input = raw_input
-except NameError:
-    pass
+__version__ = "0.2.2"
 
-settings = {}
-cleanups = []
+SETTINGS = {}
+CLEANUPS = []
 HANDLED_FILETYPES = ['mobi', 'html', 'azw']
 
 
@@ -43,15 +39,15 @@ def read_settings():
         None
 
     """
-    global settings
+    global SETTINGS
     try:
         # Open the settings file
         with open(os.path.expanduser('~/.booksnakerc'), 'r') as setfh:
-            settings = json.load(setfh)
+            SETTINGS = json.load(setfh)
     except Exception as exc:
         # Indicate that a reconcilable failure occurred:
         pretty_print([YELLOW], "No ~/.booksnakerc file found, creating...")
-        settings = {}
+        SETTINGS = {}
         save_settings()
 
 
@@ -69,7 +65,7 @@ def save_settings():
     with open(os.path.expanduser('~/.booksnakerc'), 'w+') as setfh:
         # Write the settings to disk:
         json.dump(
-            settings, setfh, sort_keys=True, indent=4, ensure_ascii=False
+            SETTINGS, setfh, sort_keys=True, indent=4, ensure_ascii=False
         )
 
 
@@ -90,11 +86,11 @@ def convert_file(filename):
     os.system('kindlegen "{}"'.format(filename))
 
     # Add the current filename to the list of things to delete:
-    cleanups.append(filename)
+    CLEANUPS.append(filename)
 
     # "Guess" the name that the converted file will have:
     filename = ".".join(filename.split('.')[:-1]) + ".mobi"
-    cleanups.append(filename)
+    CLEANUPS.append(filename)
     return filename
 
 
@@ -138,7 +134,7 @@ def _attempt_url(url, fmt="mobi", fname=None):
         filename = ".booksnake_{}.{}".format(str(int(time.time())), fmt)
     else:
         # A name was specified, use that:
-        filename = "{}.{}".format(fname, fmt)
+        filename = "{}.{}".format(fname.strip(), fmt)
     filename, _ = urlretrieve(url, filename)
     return filename
 
@@ -200,7 +196,7 @@ GUTENBERG = 2
 
 def cli_chooser(options):
     """
-    A chooser that uses the CLI to let the user pick desired option.
+    Use the CLI to let the user pick desired option.
 
     Arguments:
         options (str[][]): A list of options to provide
@@ -218,7 +214,7 @@ def cli_chooser(options):
             [" ", "*"][pub.fmt == 'mobi'],
             _trunc(pub.author, 20),
             pretty_format([GREEN], _trunc(pub.title, 40)),
-            pretty_format([PURPLE], _trunc(pub.size, 7) + " " + pub.fmt)
+            pretty_format([PURPLE], _trunc(pub.size, 7) + " " + pub.fmt + "\t(" + pub.source + ")")
         ))
         select_i += 1
     selection = input(
@@ -273,12 +269,12 @@ def process_query(query, modes=[], chooser=cli_chooser):
             options += s.get_options(query)
         except Exception as exc:
             # Should probably print out here or something...
-            pass
+            pretty_print([BOLD, YELLOW], "Failed to fetch from {} with error:".format(str(s)))
+            pretty_print([YELLOW], str(exc))
 
     selection = chooser(options)
     choice = options[int(selection) - 1]
     return _attempt_url(
-        # choice[3].replace('download', 'get'), choice[2], choice[1]
         choice.url, choice.fmt, choice.title
     )
 
@@ -289,7 +285,7 @@ def delete_files():
 
     If a deletion fails, does not notify the user.
     """
-    for fname in cleanups:
+    for fname in CLEANUPS:
         try:
             os.remove(fname)
         except OSError as exp:
@@ -303,7 +299,7 @@ def main():
     Args:
         None
     """
-    global cleanups
+    global CLEANUPS
     read_settings()
     parser = argparse.ArgumentParser(
         description='Search and send books to Kindle.'
@@ -386,7 +382,7 @@ def main():
         searchers = []
         if sum([
             args.use_gutenberg,
-            settings.get('searchers.gutenberg', False)
+            SETTINGS.get('searchers.gutenberg', False)
         ]):
             searchers.append(GutenbergSearcher())
         searchers.append(LibreLibSearcher())
@@ -399,8 +395,8 @@ def main():
     # `filename` holds the name of the file to send.
 
     if args.send_file:
-        cleanups += send_file(filename, args.from_email, args.to_email,
-                              settings=settings)
+        CLEANUPS += send_file(filename, args.from_email, args.to_email,
+                              settings=SETTINGS)
 
     if not args.keep_file:
         delete_files()
