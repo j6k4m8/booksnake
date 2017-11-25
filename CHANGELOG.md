@@ -1,5 +1,8 @@
 # Changelog
 
+- **0.2.2 (November 25, 2017)**
+    - Now searches both LibGen FF and Sci
+    - Updates to searcher response architecture for better bookkeeping (ha)
 - **0.1.5 (November 29, 2016)**
     - Fix linking in searchers.py
     - Fix pip installation process (no README required) (#3)
