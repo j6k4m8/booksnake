@@ -1,122 +1,26 @@
-#!/usr/bin/env python3
-
 """
-The main driver for booksnake.
+Booksnake v 0.3.0.
 
-Download some delicious reads!
+@j6k4m8
 """
 
-
-from __future__ import absolute_import
-import os
-import sys
-import json
+import re
+import urllib
+import urllib.request
 import time
-import argparse
 
-from booksnake.printing import *
-from booksnake.searchers import *
-from booksnake.sending import *
+from typing import List
 
+from bs4 import BeautifulSoup
+import requests
 
-__version__ = "0.2.2"
-
-SETTINGS = {}
-CLEANUPS = []
-HANDLED_FILETYPES = ['mobi', 'html', 'azw']
+from .printing import pretty_format, pretty_print, RED, YELLOW, BLUE, GREEN, BOLD, PURPLE, UNDERLINE
 
 
-def read_settings():
-    """
-    Read in the settings from a ~/.booksnakerc.
-
-    If the file does not exist, then generate a new file.
-
-    Arguments:
-        None
-
-    Returns:
-        None
-
-    """
-    global SETTINGS
-    try:
-        # Open the settings file
-        with open(os.path.expanduser('~/.booksnakerc'), 'r') as setfh:
-            SETTINGS = json.load(setfh)
-    except Exception as exc:
-        # Indicate that a reconcilable failure occurred:
-        pretty_print([YELLOW], "No ~/.booksnakerc file found, creating...")
-        SETTINGS = {}
-        save_settings()
+__version__ = "0.3.0"
 
 
-def save_settings():
-    """
-    Write settings to ~/.booksnakerc.
-
-    Arguments:
-        None
-
-    Returns:
-        None
-
-    """
-    with open(os.path.expanduser('~/.booksnakerc'), 'w+') as setfh:
-        # Write the settings to disk:
-        json.dump(
-            SETTINGS, setfh, sort_keys=True, indent=4, ensure_ascii=False
-        )
-
-
-def convert_file(filename):
-    """
-    Convert a file, using kindlegen.
-
-    TODO: Possibly to utilize fallback converters such as pandoc?
-
-    Arguments:
-        filename (str): The path to the file on disk
-
-    Returns:
-        str: The new filename, after conversion
-
-    """
-    # Call the kindlegen executable.
-    os.system('kindlegen "{}"'.format(filename))
-
-    # Add the current filename to the list of things to delete:
-    CLEANUPS.append(filename)
-
-    # "Guess" the name that the converted file will have:
-    filename = ".".join(filename.split('.')[:-1]) + ".mobi"
-    CLEANUPS.append(filename)
-    return filename
-
-
-def process_file(filename):
-    """
-    Process a file.
-
-    Arguments:
-        filename (str): The path to the file on disk
-
-    Returns:
-        str: The filename of the processed file
-
-    """
-    filename = os.path.expanduser(filename)
-    if not os.path.exists(filename):
-        raise ValueError("No such file {}.".format(filename))
-
-    ext = filename.split('.')[-1]
-    if ext not in HANDLED_FILETYPES:
-        # We need to convert.
-        filename = convert_file(filename)
-    return filename
-
-
-def _attempt_url(url, fmt="mobi", fname=None):
+def _attempt_url(url, fmt: str = "mobi", fname: str=None):
     """
     Attempt to download a file. Returns `None` if the download fails.
 
@@ -135,274 +39,402 @@ def _attempt_url(url, fmt="mobi", fname=None):
     else:
         # A name was specified, use that:
         filename = "{}.{}".format(fname.strip(), fmt)
-    filename, _ = urlretrieve(url, filename)
+    filename, _ = urllib.request.urlretrieve(url, filename)
     return filename
 
-
-def process_url(url):
+class Result:
     """
-    Process a url.
+    A result contains the information that points to a book download URL.
 
-    Arguments:
-        url (str): The HTTP url to attempt
-
-    Returns:
-        str: The filename as downloaded by _attempt_url
-
+    It also contains information like title, format, and author.
     """
-    return _attempt_url(url)
+
+    def __init__(self, url, size, fmt, title, author, source="Unknown"):
+        """
+        Create a new result.
+
+        Populate 1-to-1 with variable names
+        """
+        self.url = url
+        self.size = size
+        self.fmt = fmt
+        self.title = title
+        self.author = author
+        self.source = source
 
 
-def process_magnet(magnet):
+class Searcher:
+
+    def __init__(self):
+        self.base_url = ""
+
+    def url(self, suffix=""):
+        """
+        Generate a URL for this searcher.
+
+        .
+        """
+        return "{}/{}".format(self.base_url, suffix)
+
+    def search(self, query):
+        raise NotImplementedError()
+
+    def download(self, result: 'Result'):
+        return _attempt_url(result.url)
+
+
+class ManyBooksSearcher(Searcher):
     """
-    Process a magnet.
-
-    Arguments:
-        magnet (str): The magnet link url
-
-    Returns:
-        str: The filename, as downloaded by the magnet downloader
-
+    Searches www.manybooks.net
     """
-    raise NotImplementedError
+
+    def __init__(self):
+        self.base_url = "http://www.manybooks.net"
+
+    def search(self, query):
+        query = query.replace(' ', '+')
+        query = "/search.php?search=" + query
+        f = urllib.request.FancyURLopener({}).open(self.base_url + query)
+        content = f.read()
+        soup = BeautifulSoup(content, 'html.parser')
+        entries = soup.find_all('div', class_=["row", "grid_12"])
+        options = [Result(
+            author=re.findall("<br/>by (.*)", str(a))[0],
+            title=a.find_all("a")[0].text,
+            fmt="azw",
+            url="{}/send/1:kindle:.azw:kindle/{}/{}.azw".format(
+                self.base_url, *[
+                    a.find_all('a')[0].attrs['href']
+                    .replace(".html", "")
+                    .replace("/titles/", "")
+                ] * 2),
+            size=None,
+            source="ManyBooks"
+        ) for a in entries]
+        return options
 
 
-def _trunc(truncatable, length):
+class GutenbergSearcher(Searcher):
     """
-    Truncate a string s to length, including "...".
-
-    Truncation helper-function to truncate string s at length=length.
-    If len(s) < length, returns s with space-padding. If len(s) > length,
-    return s, ending with ellipses (...), total-length = length.
-
-    Arguments:
-        s (str): The string to truncate
-        length (int): The length at which to truncate
-
-    Returns:
-        str: Truncated string
-
+    Searches Project Gutenberg
     """
-    if len(truncatable) > length:
-        return truncatable[:length - 3] + "..."
-    else:
-        return (truncatable + (" " * length))[:length]
-    return truncatable
 
+    def __init__(self):
+        self.base_url = "https://www.gutenberg.org"
 
-LIBRELIB = 1
-GUTENBERG = 2
-
-
-def cli_chooser(options):
-    """
-    Use the CLI to let the user pick desired option.
-
-    Arguments:
-        options (str[][]): A list of options to provide
-
-    Returns:
-        Index into `options` to choose
-
-    """
-    select_i = 1
-    for pub in options:
-        # Print number, format indicator*, author,
-        # title, size, and format for each item.
-        print("[{}]{}\t{}\t{}\t{}".format(
-            select_i,
-            [" ", "*"][pub.fmt == 'mobi'],
-            _trunc(pub.author, 20),
-            pretty_format([GREEN], _trunc(pub.title, 40)),
-            pretty_format([PURPLE], _trunc(pub.size, 7) + " " + pub.fmt + "\t(" + pub.source + ")")
-        ))
-        select_i += 1
-    selection = input(
-        "Select the book to download (1..{}): ".format(select_i - 1)
-    )
-    return selection
-
-
-def always_choose_the_first_mobi_chooser(options):
-    """
-    A chooser that just picks the first mobi that it sees. Promiscuous!
-
-    Arguments:
-        options (str[][]): A list of options to provide
-
-    Returns:
-        Index into `options`
-    """
-    select_i = 1
-    for pub in options:
-        if pub.fmt == 'mobi':
-            return select_i
-        select_i += 1
-
-
-def process_query(query, modes=[], chooser=cli_chooser):
-    """
-    Process a search query.
-
-    Arguments:
-        query (str): The query to search for. Needn't be escaped!
-        modes (booksnake.searcher.BooksnakeSearcher[] : []): The searchers to
-            use when looking up the query. If none are specified, all are used
-        chooser (fn : cli_chooser): Which chooser to use when selecting. Uses
-            the CLI when none is specified.
-
-    Returns:
-        str: filename of the downloaded file
-
-    """
-    if type(modes) is not list:
-        modes = [modes]
-
-    if len(modes) is 0:
-        modes = [GutenbergSearcher(), LibreLibSearcher(), LibgenSearcher()]
-
-    options = []
-    for s in modes:
+    def search(self, query):
+        query = query.replace(' ', '+')
+        query = "/ebooks/search/?query=" + query
+        f = urllib.request.FancyURLopener({}).open(self.base_url + query)
         try:
-            # This fails in cases where the website is down or the HTML has
-            # changed dramatically:
-            options += s.get_options(query)
-        except Exception as exc:
-            # Should probably print out here or something...
-            pretty_print([BOLD, YELLOW], "Failed to fetch from {} with error:".format(str(s)))
-            pretty_print([YELLOW], str(exc))
+            content = f.read()
+        except Exception:
+            pretty_print([RED, UNDERLINE], "RATE LIMITED!")
+            pretty_print(
+                [YELLOW],
+                "You've probably hit the Gutenberg page too many times " +
+                "and have been banned for 24 hours by their rate-limiter. "
+            )
+            return []
+        soup = BeautifulSoup(content, 'html.parser')
+        links = soup.findAll("li", {"class": "booklink"})
+        options = []
+        for a in links:
+            author = a.find('span', {
+                'class': 'subtitle'
+            })
+            author = author.text.strip() if author else " "
+            title = a.find('span', {
+                'class': 'title'
+            }).text.strip()
 
-    selection = chooser(options)
-    choice = options[int(selection) - 1]
-    return _attempt_url(
-        choice.url, choice.fmt, choice.title
-    )
+            options.append(Result(
+                author=author,
+                title=title,
+                fmt='mobi',
+                url=self.url(
+                    a.find('a').get('href') +
+                    ".kindle.images"
+                ),
+                size=' ',
+                source="Gutenberg"
+            ))
+        return options
 
 
-def delete_files():
+class LibGenSearcher(Searcher):
     """
-    Remove all of the files in the `cleanup` array.
-
-    If a deletion fails, does not notify the user.
+    Searches libgen.io
     """
-    for fname in CLEANUPS:
-        try:
-            os.remove(fname)
-        except OSError as exp:
-            pass
+
+    def __init__(self):
+        self.ff_base_url = (
+            "http://libgen.io" +
+            "/foreignfiction/index.php?" +
+            "s={}&f_lang=English&f_columns=0&f_ext=All"
+        )
+        self.sci_base_url = (
+            "http://libgen.io" +
+            "/search.php?" +
+            "req={}"
+        )
+
+    def _ff_options(self, query):
+        content = requests.get(self.ff_base_url.format(query)).text
+        soup = BeautifulSoup(content, 'html.parser')
+        options = []
+        for a in soup.findAll('table')[-1].findAll('tr'):
+            try:
+                link = a.findAll('a')[-2].get('href').replace(
+                    'ads.php', 'get.php'
+                )
+
+                if link[0] == "/":
+                    link = "http://libgen.io" + link
+
+                link = BeautifulSoup(
+                    requests.get(link).text, 'html.parser'
+                ).findAll('a')[-1].get('href')
+
+                size = "   "
+                try:
+                    size = re.findall(
+                        r".*\((.*)\).*",
+                        a.findAll('td')[-1].text.strip()
+                    )[0]
+                except Exception:
+                    pass
+                options.append(Result(
+                    url=link,
+                    size=size,
+                    fmt=a.findAll('td')[-1].text.strip().split('(')[0],
+                    title=(
+                        a.findAll('td')[1].text.strip() +
+                        " " +
+                        a.findAll('td')[2].text.strip()
+                    ),
+                    author=a.findAll('td')[0].text.strip(),
+                    source="LibGen"
+                ))
+            except Exception:
+                pass
+        return options
+
+    def _sci_options(self, query):
+        content = requests.get(self.sci_base_url.format(query)).text
+        soup = BeautifulSoup(content, 'html.parser')
+        options = []
+        for a in soup.findAll('table')[2].findAll('tr')[1:]:
+            try:
+                link = [
+                    ll for ll in a.findAll('a')
+                    if 'ads.php' in ll.get('href', '')
+                ][0].get('href').replace(
+                    'ads.php', 'get.php'
+                )
+
+                if link[0] == "/":
+                    link = "http://libgen.io" + link
+
+                content = requests.get(link).text
+                soup = BeautifulSoup(content, 'html.parser')
+                link = [
+                    a for a in soup.findAll('a')
+                    if 'get.php' in a.get('href')
+                ][0].get('href')
+
+                size = "   "
+                try:
+                    size = re.findall(
+                        r".*\((.*)\).*",
+                        a.findAll('td')[-1].text.strip()
+                    )[0]
+                except Exception as exc:
+                    pass
+                options.append(Result(
+                    url=link,
+                    size=a.findAll('td')[7].text.strip(),
+                    fmt=a.findAll('td')[8].text.strip(),
+                    title=(
+                        a.findAll('td')[2].text.strip()
+                    ),
+                    author=a.findAll('td')[1].text.strip(),
+                    source="LibGen"
+                ))
+            except Exception:
+                pass
+        return options
+
+    def search(self, query):
+        """
+        Get the available results from this searcher.
+
+        .
+        """
+        query = query.replace(' ', '+')
+        options = []
+        # options += self._ff_options(query)
+        options += self._sci_options(query)
+        return options
 
 
-def main():
+def _truncate(s:str, n:int) -> str:
     """
-    CLI main fn.
+    Truncate a string to a given length.
 
-    Args:
-        None
+    Concat ellipses if truncated.
     """
-    global CLEANUPS
-    read_settings()
-    parser = argparse.ArgumentParser(
-        description='Search and send books to Kindle.'
-    )
-    parser.add_argument(
-        '--from', dest='from_email', required=False, default=None,
-        help='An authorized sender on your Amazon account.'
-    )
-    parser.add_argument(
-        '--to', dest='to_email', required=False, default=None,
-        help="Your Kindle's email address (foo@free.kindle.com)"
-    )
+    if len(s) <= n:
+        return s
 
-    parser.add_argument(
-        '--gutenberg', dest='use_gutenberg', action='store_true',
-        help="Explicitly use Gutenberg as a search engine"
-    )
-    parser.add_argument(
-        '--no-gutenberg', dest='use_gutenberg', action='store_false',
-        help="Explicitly DON'T use Gutenberg as a search engine"
-    )
-    parser.set_defaults(use_gutenberg=False)
+    return s[:n - 1] + "…"
 
-    parser.add_argument(
-        '--keep', dest='keep_file', action='store_true',
-        help="Keep the file(s) when booksnake exits"
-    )
-    parser.add_argument(
-        '--no-keep', dest='keep_file', action='store_false',
-        help="[Default] Delete the file(s) when booksnake exits"
-    )
-    parser.set_defaults(keep_file=False)
+def _pad(s:str, n:int, align='right') -> str:
+    """
+    Pad a string to a given length.
 
-    parser.add_argument(
-        '--send', dest='send_file', action='store_true',
-        help="[Default] Send the file when done processing"
-    )
-    parser.add_argument(
-        '--no-send', dest='send_file', action='store_false',
-        help="Do not send the file when done processing. (Use with --keep)"
-    )
-    parser.set_defaults(send_file=True)
+    Concat spaces or truncate.
 
-    source_group = parser.add_mutually_exclusive_group(required=True)
-    source_group.add_argument(
-        '--version', '-v', dest='version', required=False, default=False,
-        action='store_true',
-        help="Get the version of the booksnake library running here."
-    )
-    source_group.add_argument(
-        '--query', '-q', dest='query', required=False, default=None,
-        help="If you're searching for a file, the search terms."
-    )
-    source_group.add_argument(
-        '--file', '-f', dest='filename', required=False, default=None,
-        help="If you're sending a downloaded file, the filename."
-    )
-    source_group.add_argument(
-        '--url', '-u', dest='url', required=False, default=None,
-        help="If you're sending a downloadable file, the URL."
-    )
-    source_group.add_argument(
-        '--magnet', '-m', dest='magnet', required=False, default=None,
-        help="If you're downloading via a magnet link"
-    )
-    args = parser.parse_args()
+    Arguments:
+        s (str): The string to pad
+        n (int): The length to pad to
 
-    if args.version:
-        print(__version__)
-        exit()
+    Returns:
+        str: The padded string
 
-    if args.filename is not None:
-        filename = args.filename
-    elif args.url is not None:
-        filename = process_url(args.url)
-    elif args.magnet is not None:
-        filename = process_magnet(args.magnet)
-    else:
-        # search if all else fails.
-        searchers = []
-        if sum([
-            args.use_gutenberg,
-            SETTINGS.get('searchers.gutenberg', False)
-        ]):
-            searchers.append(GutenbergSearcher())
-        searchers.append(LibreLibSearcher())
-        searchers.append(ManyBooksSearcher())
-        searchers.append(LibgenSearcher())
-        filename = process_query(args.query, modes=searchers)
-
-    # Perform conversion, if necessary.
-    filename = process_file(filename)
-    # `filename` holds the name of the file to send.
-
-    if args.send_file:
-        CLEANUPS += send_file(filename, args.from_email, args.to_email,
-                              settings=SETTINGS)
-
-    if not args.keep_file:
-        delete_files()
-
-    save_settings()
+    """
+    ss = list(" " * n)
+    t = _truncate(s, n)
+    # for i, m in enumerate(t):
+    #     ss[i] = m
+    ss[0:len(t)] = t
+    return "".join(ss)
 
 
-if __name__ == "__main__":
-    main()
+DEFAULT_PREFERRED_TYPES = [
+    'mobi', 'azw', 'txt'
+]
+
+DEFAULT_SEARCHERS = [
+    # GutenbergSearcher,
+    LibGenSearcher,
+    ManyBooksSearcher,
+]
+
+BOOK_SEARCHERS = DEFAULT_SEARCHERS
+ARTICLE_SEARCHERS = [
+    # LibGenSearcher
+]
+
+def filenameize(name: str):
+    return re.sub("\W+", "-", re.sub("['\"`]+", "", name.strip()))
+
+class Booksnake:
+
+    def __init__(self, preferred_types: List[str] = None):
+        self.searchers = DEFAULT_SEARCHERS
+
+        if preferred_types:
+            self.preferred_types = preferred_types
+        else:
+            self.preferred_types = DEFAULT_PREFERRED_TYPES
+
+    def search(self, query: str) -> List['Result']:
+        """
+        Search for books.
+
+        .
+        """
+        results = []
+        for s in self.searchers:
+            results += s().search(query)
+        results = sorted(results, key=lambda x: x.fmt not in self.preferred_types)
+        return results
+
+    def download(self, result: 'Result'):
+        print(_attempt_url(result.url, result.fmt, filenameize(result.title)))
+
+
+def print_results(
+    results: List['Result'],
+    color: bool = True,
+    width: int = 80,
+    preferred_types: List[str] = DEFAULT_PREFERRED_TYPES
+):
+    """
+    Print results in a nice table.
+
+    Arguments:
+
+    Returns:
+
+    """
+    for i, result in enumerate(results):
+        if color:
+            print("{i}{indicator} {title} {author} {format} {source}".format(
+                i=(
+                    pretty_format([BLUE], "[{}]".format(_pad(str(i), 2)))
+                ),
+                indicator=(pretty_format([GREEN],
+                    "*" if result.fmt in preferred_types else " "
+                )),
+                title=(pretty_format([BOLD, PURPLE, UNDERLINE],
+                    _pad(result.title, int(max(10, width / 80 * 40)))
+                )),
+                author=(pretty_format([BOLD],
+                    _pad(result.author, int(max(5, width / 80 * 20)))
+                )),
+                format=(pretty_format([BLUE],
+                    _pad("[{}]".format(result.fmt), int(max(6, width / 80 * 7)))
+                )),
+                source=(pretty_format([],
+                    _pad(result.source, int(max(4, width / 80 * 10)))
+                ))
+            ))
+        else:
+            print("{i}{indicator} {title} {author} {format} {source}".format(
+                i="[{}]".format(_pad(str(i), 2)),
+                indicator="*" if result.fmt in preferred_types else " ",
+                title=_pad(result.title, int(max(10, width / 80 * 40))),
+                author=_pad(result.author, int(max(5, width / 80 * 20))),
+                format=_pad("[{}]".format(result.fmt), int(max(6, width / 80 * 7))),
+                source=_pad(result.source, int(max(4, width / 80 * 10)))
+            ))
+
+def html_results(
+    results: List['Result'],
+    preferred_types: List[str] = DEFAULT_PREFERRED_TYPES
+):
+    """
+    Print results in a nice table.
+
+    Arguments:
+
+    Returns:
+
+    """
+    return """
+        <table>
+            <thead>
+                <th>Title</th>
+                <th>Author</th>
+                <th>Format</th>
+                <th>Source</th>
+            <thead>
+            <tbody>{}</tbody>
+        </table>""".format("".join(
+        ["""
+        <tr>
+            <td>{title}</td>
+            <td>{author}</td>
+            <td>{format}</td>
+            <td><a href='{url}'>{source}</a></td>
+        </tr>
+        """.format(
+            title=result.title,
+            author=result.author,
+            format=result.fmt,
+            url=result.url,
+            source=result.source,
+        ) for i, result in enumerate(results)]
+    ))

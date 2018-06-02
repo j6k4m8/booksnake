@@ -12,7 +12,7 @@ END = '\033[0m'
 
 def pretty_print(colors, text, cr=True):
     """
-    Print text to stdout
+    Print text to stdout.
 
     Arguments:
         colors (str[]): An array of colors (such as those defined above)
@@ -21,7 +21,9 @@ def pretty_print(colors, text, cr=True):
 
     Returns:
         None
+
     """
+    text = str(text)
     if type(colors) == list:
         pre = ''.join(colors)
     else:
@@ -35,7 +37,7 @@ def pretty_print(colors, text, cr=True):
 
 def pretty_format(colors, text):
     """
-    Performs nesting of text inside coloration terminals
+    Perform nesting of text inside coloration terminals.
 
     Arguments:
         colors (str[]): An array of colors (such as those defined above)
@@ -43,7 +45,9 @@ def pretty_format(colors, text):
 
     Returns:
         str: Formatted string, nested in formatters
+
     """
+    text = str(text)
     if type(colors) == list:
         pre = ''.join(colors)
     else:
