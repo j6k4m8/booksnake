@@ -1,15 +1,10 @@
 import os
-from distutils.core import setup
+from setuptools import setup, find_packages
 
 import booksnake
+from booksnake.version import __version__
 
-"""
-git tag {VERSION}
-git push --tags
-python setup.py sdist upload -r pypi
-"""
-
-VERSION = booksnake.__version__
+VERSION = __version__
 
 setup(
     name="booksnake",
@@ -17,19 +12,23 @@ setup(
     author="Jordan Matelsky",
     author_email="j6k4m8@gmail.com",
     description=("Download books from the internet and send to kindle"),
-    license="BSD",
+    license="Apache 2.0",
     keywords=[
         "kindle",
         "ebook",
         "download"
     ],
     url="https://github.com/j6k4m8/booksnake/tarball/" + VERSION,
-    packages=['booksnake'],
+    packages=find_packages(exclude=["docs", "tests*"]),
     scripts=[
         'scripts/booksnake'
     ],
-    classifiers=[],
+    classifiers=[
+        "Programming Language :: Python :: 3.7",
+        "Programming Language :: Python :: 3.8",
+    ],
     install_requires=[
-        'beautifulsoup4'
+        'beautifulsoup4',
+        'libgen-api'
     ],
 )

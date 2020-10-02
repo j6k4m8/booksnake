@@ -22,9 +22,6 @@ import bs4 as bs
 
 from .sending import send_file
 
-
-__version__ = "0.3.0"
-
 SUPPORTED_EXTENSIONS = ["mobi", "azw", "text", "txt"]
 SUPPORTED_LANGUAGES = ["english"]
 
