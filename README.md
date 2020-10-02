@@ -9,6 +9,7 @@ Booksnake is a tool to search the web for ebooks and automagically send them to 
 ## Installation
 
 Spin up your favorite terminal, and boop this puppy right up in there:
+
 ```shell
 pip install booksnake
 ```
@@ -16,7 +17,8 @@ pip install booksnake
 Q.E.D. wut up
 
 ## Setup
-This step is entirely optional, but if you don't want to have to specify `--to_email`, `--from_email`, and then type your email password every time you send, then you can add the following to a `~/.booksnakerc`:
+
+Create a `~/.config/booksnake.json` file with the following contents:
 
 ```json
 {
@@ -34,42 +36,33 @@ You may also choose, like I did, to make a standalone gmail for just this purpos
 
 ## Usage
 
-### Searching for, downloading, and sending a book
+No matter which command (`send`, `download`, or `search`) you use, Booksnake will show the same search results:
 
 ```shell
-booksnake --query "Moby Dick"
+booksnake send connecticut yankee
+1:	<Book "A Connecticut Yankee In King Arthur's Court" by Twain, Mark>
+2:	<Book "A Connecticut Yankee in King Arthur's Court" by Twain, Mark>
+3:	<Book "A Connecticut Yankee in King Arthur's Court" by Twain, Mark>
+4:	<Book "Connecticut Yankee in King Arthur's Court, A" by Twain, Mark>
+>
 ```
 
-[![asciicast](https://asciinema.org/a/esbwna82m297lbwhhvm2w95ne.png)](https://asciinema.org/a/esbwna82m297lbwhhvm2w95ne)
+You are prompted to enter the ID number of the book you want to process. Enter an integer, and then hit Enter.
 
-### Sending a book from a known URL
+### Search for a book without downloading
+
 ```shell
-booksnake --url "http://mobydick.com/mobydick.mobi"
+booksnake search "Moby Dick"
 ```
 
-### Sending a book from a local file:
+### Download a book without sending
+
 ```shell
-booksnake --file "~/books/mobydick.mobi"
+booksnake download "Moby Dick"
 ```
 
-## Advanced Usage
-
-### Converting Files
-If you're a _hacking wizard_ and you have Amazon's [`kindlegen`](https://www.amazon.com/gp/feature.html?docId=1000765211) installed, you may be able to convert some subset of epubs and pdfs to mobi, and send those to your kindle as well. As long as `kindlegen` is callable globally (e.g. you've put it in `/usr/bin` or somesuch), there's no difference in how you call booksnake:
+### Search for, download, and send a book to Kindle:
 
 ```shell
-booksnake --file "~/books/mobydick.epub"
-```
-
-### Preventing Sends, or Keeping Files
-If you want to prevent booksnake from deleting the files after downloading and sending, you can pass the `--keep` flag:
-
-```shell
-booksnake --keep --query "Great Expectations"
-```
-
-You can combine this with `--no-send` if you want to _only_ download and convert the file, and not send it:
-
-```shell
-booksnake --keep --no-send --query "Great Expectations"
+booksnake send "Moby Dick"
 ```

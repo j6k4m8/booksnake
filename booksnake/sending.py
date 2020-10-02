@@ -8,10 +8,9 @@ except Exception as exc:
     import email.mime.multipart
 import getpass
 
-from booksnake.printing import *
 
-
-def send_file(filename, from_email=None, to_email=None, settings={}):
+def send_file(filename, contents=None, from_email=None, to_email=None, settings=None):
+    settings = settings or {}
     cleanups = []
     # http://stackoverflow.com/a/8243031/979255
     if from_email is None:
@@ -32,10 +31,20 @@ def send_file(filename, from_email=None, to_email=None, settings={}):
     m['From'] = from_email
     m['To'] = to_email
 
-    fp = open(filename, 'rb')
-    att = email.mime.application.MIMEApplication(fp.read(),
-                                                 _subtype="x-mobipocket-ebook")
-    fp.close()
+    if contents:
+        att = email.mime.application.MIMEApplication(
+            contents.read(),
+            _subtype="x-mobipocket-ebook"
+        )
+    elif isinstance(filename, str):
+        fp = open(filename, 'rb')
+        att = email.mime.application.MIMEApplication(
+            fp.read(),
+            _subtype="x-mobipocket-ebook"
+        )
+        fp.close()
+    else:
+        raise ValueError("Must specify filename, or filename and contents")
     att.add_header('Content-Disposition', 'attachment', filename=filename)
     m.attach(att)
 
@@ -53,7 +62,7 @@ def send_file(filename, from_email=None, to_email=None, settings={}):
             else:
                 passwd = settings['smtp_password']
 
-            pretty_print([CYAN], "Beginning send...")
+            # pretty_print([CYAN], "Beginning send...")
             s = smtplib.SMTP('smtp.gmail.com:587')
             s.starttls()
             s.login(from_email, passwd)
@@ -62,7 +71,7 @@ def send_file(filename, from_email=None, to_email=None, settings={}):
                 [to_email],
                 m.as_string())
             s.quit()
-            pretty_print([CYAN], "Send complete.")
+            # pretty_print([CYAN], "Send complete.")
             return cleanups
         except Exception as e:
             print(e)

@@ -2,7 +2,5 @@
 setup.cfg
 setup.py
 booksnake/__init__.py
-booksnake/printing.py
-booksnake/searchers.py
 booksnake/sending.py
 scripts/booksnake

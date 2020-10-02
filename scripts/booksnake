@@ -2,4 +2,4 @@
 
 import booksnake
 
-booksnake.main()
+booksnake.cli()
