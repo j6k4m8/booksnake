@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.1 (February 10, 2021)
+
+> Adds `to_dict` and `from_dict` serialization for all `Book` types. This enables JSON-friendly serialization for using interfaces outside of Python.
+
 ## 0.3.0 (October 2, 2020)
 
 > A whole big-chicken update! Package has been out of shape for a while, so this is a complete rewrite. You can expect all searchers to work nicely now, which is partially because I baleeted the old ones that were deprecated or broken. New CLI interface too, so... Don't use old commands, I guess. BREAKS EVERYTHING WOO
