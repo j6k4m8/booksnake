@@ -56,7 +56,7 @@ class Searcher:
         ...
 
 
-class LibgenBook:
+class LibgenBook(Book):
 
     def __init__(self, title: str, author: str, ext: str, mirrors: List[str], data: dict = None) -> None:
         self.title = title
@@ -65,15 +65,25 @@ class LibgenBook:
         self.mirrors = mirrors
         self._data = data
 
-    @classmethod
-    def from_dict(cls, data: dict):
-        return cls(
-            title=data["Title"],
-            author=data["Author"],
-            ext=data["Extension"],
-            mirrors=[v for k, v in data.items() if "Mirror" in k],
+    @staticmethod
+    def from_dict(data: dict):
+        return LibgenBook(
+            title=data.get("Title", data.get("title")),
+            author=data.get("Author", data.get("author")),
+            ext=data.get("Extension", data.get("ext")),
+            mirrors=data.get("links", None) or [v for k, v in data.items() if "Mirror" in k],
             data=data
         )
+
+    def to_dict(self) -> dict:
+        return {
+            'title': self.title,
+            'author': self.author,
+            'ext': self.ext,
+            'links': self.mirrors,
+            'data': self._data,
+            "type": "LibgenBook"
+        }
 
     def __repr__(self) -> str:
         return f'<LibgenBook "{self.title}" by {self.author}>'
@@ -178,6 +188,26 @@ class GutenbergBook(Book):
 
     def __str__(self):
         return self.__repr__()
+
+    def to_dict(self) -> dict:
+        return {
+            "title": self.title,
+            "author": self.author,
+            "ext": self.ext,
+            "links": [self.link],
+            "data": self._data,
+            "type": "GutenbergBook"
+        }
+
+    @staticmethod
+    def from_dict(data: dict) -> Book:
+        return GutenbergBook(
+            author=data['author'],
+            title=data['title'],
+            ext=data['ext'],
+            link=data['link'],
+            data=data['data'],
+        )
 
     def download(self, destination: str = None) -> Union[str, io.BytesIO]:
         book_content = requests.get(self.link).content
