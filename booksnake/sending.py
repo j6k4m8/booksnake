@@ -65,7 +65,6 @@ def send_file(filename, contents=None, from_email=None, to_email=None, settings=
             else:
                 passwd = settings["smtp_password"]
 
-            # pretty_print([CYAN], "Beginning send...")
             s = smtplib.SMTP(
                 settings.get("smtp_server", "smtp.gmail.com"),
                 settings.get("smtp_port", 587),
@@ -74,7 +73,6 @@ def send_file(filename, contents=None, from_email=None, to_email=None, settings=
             s.login(from_email, passwd)
             s.sendmail(from_email, [to_email], m.as_string())
             s.quit()
-            # pretty_print([CYAN], "Send complete.")
             return cleanups
         except Exception as e:
             print(e)

@@ -213,7 +213,9 @@ DEFAULT_SEARCHERS = [
 
 
 def cli():
-    def _cli_list(query, settings_file: str = DEFAULT_SETTINGS_FILE) -> List[Book]:
+    def _cli_list(
+        query, settings_file: str = DEFAULT_SETTINGS_FILE, **kwargs
+    ) -> List[Book]:
         results = []
         for searcher, args in DEFAULT_SEARCHERS:
             try:
@@ -225,7 +227,9 @@ def cli():
             print(f"{i+1}:\t{result}")
         return results
 
-    def _interactive_search(query, settings_file: str = DEFAULT_SETTINGS_FILE) -> Book:
+    def _interactive_search(
+        query, settings_file: str = DEFAULT_SETTINGS_FILE, **kwargs
+    ) -> Book:
         results = _cli_list(query)
 
         selection = input("> ")
@@ -236,14 +240,16 @@ def cli():
         else:
             print("Quitting...")
 
-    def _cli_download(query, settings_file: str = DEFAULT_SETTINGS_FILE):
+    def _cli_download(query, settings_file: str = DEFAULT_SETTINGS_FILE, **kwargs):
         book = _interactive_search(query)
         book.download(book.title + "." + book.ext)
 
-    def _cli_search(query, settings_file: str = DEFAULT_SETTINGS_FILE):
+    def _cli_search(query, settings_file: str = DEFAULT_SETTINGS_FILE, **kwargs):
         _cli_list(query)
 
-    def _cli_send(query, settings_file: str = DEFAULT_SETTINGS_FILE):
+    def _cli_send(
+        query, settings_file: str = DEFAULT_SETTINGS_FILE, keep: bool = False
+    ):
         # Start by trying to get the config file:
         try:
             settings = json.load(open(os.path.expanduser(settings_file), "r"))
@@ -259,13 +265,16 @@ def cli():
         book = _interactive_search(query)
         contents = io.BytesIO(book.download())
         contents.seek(0)
-        send_file(
+        files_to_cleanup = send_file(
             filename=book.title + "." + book.ext,
             contents=contents,
             settings=settings,
         )
+        if not keep:
+            for f in files_to_cleanup:
+                os.remove(f)
 
-    def _cli_fail(query):
+    def _cli_fail(query, **kwargs):
         print("Something went wrong. Try booksnake [download|search|send] QUERY")
 
     commands = {
@@ -281,13 +290,23 @@ def cli():
         "command", choices=["download", "search", "send"], help="The command to execute"
     )
     parser.add_argument("query", nargs="+", help="The query to search for")
+    parser.add_argument(
+        "--settings-file",
+        help="The settings file to use for sending books",
+        default=DEFAULT_SETTINGS_FILE,
+    )
+    parser.add_argument(
+        "--keep",
+        help="Keep the downloaded file after sending",
+        action="store_true",
+    )
 
     args = parser.parse_args()
 
     command = args.command
     query = " ".join(args.query)
 
-    commands.get(command, _cli_fail)(query)
+    commands.get(command, _cli_fail)(query, args.settings_file, args.keep)
 
 
 if __name__ == "__main__":
