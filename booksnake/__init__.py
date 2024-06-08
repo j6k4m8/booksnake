@@ -1,31 +1,27 @@
-import urllib
-
 #!/usr/bin/env python3
-
 """
 The main driver for booksnake.
 
 Download some delicious reads!
 """
-
-
+import urllib
+import io
+import json
+import os.path
+import sys
 from typing import List, Union
 
-import os.path
-import json
-import io
-import sys
-
+import bs4 as bs
 import requests
 from libgen_api import LibgenSearch
 
-# import pandas as pd
-import bs4 as bs
+from .sending import send_file, BLANK_SETTINGS as BLANK_SEND_SETTINGS
+import argparse
 
-from .sending import send_file
 
 SUPPORTED_EXTENSIONS = ["mobi", "azw", "text", "txt", "epub", "rtf"]
 SUPPORTED_LANGUAGES = ["english"]
+DEFAULT_SETTINGS_FILE = "~/.config/booksnake.json"
 
 
 class Book:
@@ -35,8 +31,7 @@ class Book:
         self.author = author
         self.ext = ext
 
-    def download(self, destination: str) -> Union[str, io.BytesIO]:
-        ...
+    def download(self, destination: str) -> Union[str, io.BytesIO]: ...
 
     def to_dict(self) -> dict:
         return {
@@ -50,8 +45,7 @@ class Searcher:
     def __init__(self) -> None:
         """ """
 
-    def search(self, query: str) -> List[Book]:
-        ...
+    def search(self, query: str) -> List[Book]: ...
 
 
 class LibgenBook(Book):
@@ -126,52 +120,6 @@ class LibgenSearcher(Searcher):
                 and r["Language"].lower() in SUPPORTED_LANGUAGES
             )
         ]
-
-
-# class LibgenFictionSearcher(Searcher):
-#     def __init__(self, base_url: str = "http://libgen.is/fiction/") -> None:
-#         self.base_url = base_url
-
-#     def search(self, query: str) -> List[Book]:
-
-#         f = requests.get(f"{self.base_url}?q={query}").content
-#         soup = bs.BeautifulSoup(f, "lxml")
-#         parsed_table = soup.find_all("table")[0]
-#         data = [
-#             [
-#                 # {tag.text.split(" ")[0]: tag["href"] for tag in td.find_all("a")}
-#                 # if td.find_all("a")
-#                 # else
-#                 "".join(td.stripped_strings).replace("&varr;", "")
-#                 for td in row.find_all("td")
-#             ]
-#             for row in parsed_table.find_all("tr")
-#         ]
-#         table = pd.DataFrame(data[1:], columns=data[0])
-
-
-#         unfiltered_results = [
-#             LibgenBook(
-#                 title="".join(row.Title.keys()),
-#                 author=(
-#                     row["Author(s)"]
-#                     if isinstance(row["Author(s)"], str)
-#                     else "".join(row["Author(s)"].keys())
-#                 ),
-#                 ext=row["File"].split("/")[0].lower().strip(),
-#                 mirrors=list(row["Mirrors"].values()),
-#                 data=dict(row),
-#             )
-#             for _, row in table.iterrows()
-#         ]
-#         return [
-#             book
-#             for book in unfiltered_results
-#             if (
-#                 book.ext in SUPPORTED_EXTENSIONS
-#                 and book._data["Language"].lower() in SUPPORTED_LANGUAGES
-#             )
-#         ]
 
 
 class GutenbergBook(Book):
@@ -265,7 +213,7 @@ DEFAULT_SEARCHERS = [
 
 
 def cli():
-    def _cli_list(query) -> List[Book]:
+    def _cli_list(query, settings_file: str = DEFAULT_SETTINGS_FILE) -> List[Book]:
         results = []
         for searcher, args in DEFAULT_SEARCHERS:
             try:
@@ -277,7 +225,7 @@ def cli():
             print(f"{i+1}:\t{result}")
         return results
 
-    def _interactive_search(query) -> Book:
+    def _interactive_search(query, settings_file: str = DEFAULT_SETTINGS_FILE) -> Book:
         results = _cli_list(query)
 
         selection = input("> ")
@@ -288,23 +236,33 @@ def cli():
         else:
             print("Quitting...")
 
-    def _cli_download(query):
+    def _cli_download(query, settings_file: str = DEFAULT_SETTINGS_FILE):
         book = _interactive_search(query)
         book.download(book.title + "." + book.ext)
 
-    def _cli_search(query):
+    def _cli_search(query, settings_file: str = DEFAULT_SETTINGS_FILE):
         _cli_list(query)
 
-    def _cli_send(query):
+    def _cli_send(query, settings_file: str = DEFAULT_SETTINGS_FILE):
+        # Start by trying to get the config file:
+        try:
+            settings = json.load(open(os.path.expanduser(settings_file), "r"))
+        except FileNotFoundError:
+            print(
+                "No configuration file found. Please create a file at "
+                + os.path.expanduser(settings_file)
+                + " with the following format:"
+            )
+            print(json.dumps(BLANK_SEND_SETTINGS))
+            sys.exit(1)
+
         book = _interactive_search(query)
         contents = io.BytesIO(book.download())
         contents.seek(0)
         send_file(
             filename=book.title + "." + book.ext,
             contents=contents,
-            settings=json.load(
-                open(os.path.expanduser("~/.config/booksnake.json"), "r")
-            ),
+            settings=settings,
         )
 
     def _cli_fail(query):
@@ -316,8 +274,18 @@ def cli():
         "send": _cli_send,
     }
 
-    command = sys.argv[1]
-    query = " ".join(sys.argv[2:])
+    parser = argparse.ArgumentParser(
+        description="Download books from the command-line."
+    )
+    parser.add_argument(
+        "command", choices=["download", "search", "send"], help="The command to execute"
+    )
+    parser.add_argument("query", nargs="+", help="The query to search for")
+
+    args = parser.parse_args()
+
+    command = args.command
+    query = " ".join(args.query)
 
     commands.get(command, _cli_fail)(query)
 
